@@ -1,0 +1,224 @@
+.app-header {
+  display: grid;
+  grid-template-columns: auto auto minmax(320px, 420px);
+  position: relative;
+  align-items: center;
+  gap: 14px;
+  width: min(1220px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 16px 18px;
+  border: 1px solid rgba(136, 160, 194, 0.18);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(10, 14, 29, 0.96), rgba(8, 11, 24, 0.94)),
+    rgba(8, 12, 26, 0.92);
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(14px);
+  overflow: visible;
+  z-index: 10;
+}
+
+.app-header__nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.app-header__nav-link {
+  min-height: 38px;
+  padding: 9px 14px;
+  border: 1px solid rgba(129, 149, 179, 0.16);
+  border-radius: 10px;
+  background: rgba(21, 27, 43, 0.88);
+  color: #dce4f5;
+  font: 600 0.84rem/1 "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.app-header__nav-link:hover,
+.app-header__nav-link--active {
+  border-color: rgba(110, 205, 218, 0.34);
+  background: rgba(28, 39, 58, 0.96);
+}
+
+.search-bar {
+  position: relative;
+  width: 100%;
+  overflow: visible;
+  z-index: 1;
+}
+
+.search-bar__controls {
+  display: grid;
+  grid-template-columns: minmax(132px, 156px) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.search-bar__field {
+  display: grid;
+  gap: 6px;
+}
+
+.search-bar__field--filter {
+  min-width: 0;
+}
+
+.search-bar__label {
+  color: rgba(151, 167, 195, 0.88);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.search-bar__select,
+.search-bar__input {
+  width: 100%;
+  min-height: 40px;
+  padding: 10px 12px;
+  border: 1px solid rgba(129, 149, 179, 0.16);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(17, 22, 37, 0.98), rgba(12, 16, 27, 0.98));
+  color: #f0f5ff;
+  font: 600 0.95rem/1.2 "Consolas", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  outline: none;
+}
+
+.search-bar__select {
+  appearance: none;
+}
+
+.search-bar__input::placeholder {
+  color: rgba(133, 146, 172, 0.8);
+}
+
+.search-bar__select:focus,
+.search-bar__input:focus {
+  border-color: rgba(110, 205, 218, 0.4);
+  box-shadow: 0 0 0 1px rgba(110, 205, 218, 0.16);
+}
+
+.search-dropdown-portal {
+  pointer-events: none;
+}
+
+.search-dropdown {
+  position: relative;
+  max-height: inherit;
+  border: 1px solid rgba(120, 142, 174, 0.18);
+  border-radius: 14px;
+  background: rgba(8, 11, 21, 0.98);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.42);
+  overflow-x: hidden;
+  overflow-y: auto;
+  pointer-events: auto;
+}
+
+.search-dropdown__section + .search-dropdown__section {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.search-dropdown__section-header {
+  padding: 8px 12px;
+  background: rgba(18, 24, 37, 0.94);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.search-dropdown__section-header span {
+  color: rgba(153, 166, 189, 0.92);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.search-dropdown__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.search-dropdown__row {
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.search-dropdown__item:last-child .search-dropdown__row {
+  border-bottom: 0;
+}
+
+.search-dropdown__row:hover,
+.search-dropdown__row--highlighted {
+  background: rgba(32, 43, 62, 0.9);
+}
+
+.search-dropdown__primary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.search-dropdown__primary strong {
+  color: #edf3ff;
+  font-size: 0.92rem;
+  line-height: 1.2;
+}
+
+.search-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.search-badge--player {
+  color: #8de3f0;
+  background: rgba(52, 94, 114, 0.35);
+}
+
+.search-badge--league {
+  color: #d4ef90;
+  background: rgba(75, 94, 47, 0.35);
+}
+
+.search-dropdown__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  color: rgba(150, 163, 186, 0.88);
+  font: 0.78rem/1.35 "Consolas", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.search-dropdown__empty {
+  padding: 12px;
+  color: rgba(153, 166, 189, 0.92);
+  font-size: 0.84rem;
+}
+
+@media (max-width: 980px) {
+  .app-header {
+    grid-template-columns: 1fr;
+    width: min(100% - 24px, 1220px);
+  }
+
+  .search-bar__controls {
+    grid-template-columns: 1fr;
+  }
+}

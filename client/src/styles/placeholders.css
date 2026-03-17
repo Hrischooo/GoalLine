@@ -1,0 +1,134 @@
+.asset-avatar,
+.asset-badge,
+.app-logo {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  color: #f4f7ff;
+  flex-shrink: 0;
+}
+
+.asset-avatar {
+  border-radius: 50%;
+}
+
+.asset-avatar--small {
+  width: 34px;
+  height: 34px;
+}
+
+.asset-avatar--medium {
+  width: 52px;
+  height: 52px;
+}
+
+.asset-avatar--large {
+  width: 120px;
+  height: 120px;
+}
+
+.asset-avatar__text,
+.asset-badge__text,
+.app-logo__text {
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.asset-avatar--small .asset-avatar__text {
+  font-size: 0.8rem;
+}
+
+.asset-avatar--medium .asset-avatar__text {
+  font-size: 1rem;
+}
+
+.asset-avatar--large .asset-avatar__text {
+  font-size: 2rem;
+}
+
+.asset-badge {
+  border-radius: 14px;
+}
+
+.asset-badge--club {
+  clip-path: polygon(50% 0%, 88% 12%, 88% 62%, 50% 100%, 12% 62%, 12% 12%);
+}
+
+.asset-badge--small {
+  width: 28px;
+  height: 28px;
+}
+
+.asset-badge--medium {
+  width: 42px;
+  height: 42px;
+}
+
+.asset-badge--large {
+  width: 64px;
+  height: 64px;
+}
+
+.asset-badge--small .asset-badge__text {
+  font-size: 0.62rem;
+}
+
+.asset-badge--medium .asset-badge__text {
+  font-size: 0.78rem;
+}
+
+.asset-badge--large .asset-badge__text {
+  font-size: 1rem;
+}
+
+.app-logo {
+  border-radius: 14px;
+}
+
+.app-logo--small {
+  width: 36px;
+  height: 36px;
+}
+
+.app-logo--medium {
+  width: 44px;
+  height: 44px;
+}
+
+.app-logo__text {
+  font-size: 1rem;
+}
+
+.asset-avatar__image,
+.asset-badge__image,
+.app-logo__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.search-result-entity,
+.player-card__identity,
+.profile-club-row,
+.league-header-row,
+.league-player-row__identity {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.player-card__identity {
+  min-width: 0;
+}
+
+.search-result-entity strong,
+.player-card__identity h2,
+.profile-club-row span,
+.league-header-row h1,
+.league-player-row__identity strong {
+  min-width: 0;
+}

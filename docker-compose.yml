@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:15
+    container_name: goaline_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123457698Hh#
+      POSTGRES_DB: goaline
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  server:
+    build: ./server
+    container_name: goaline_server
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/goaline
+    depends_on:
+      - db
+
+  client:
+    build: ./client
+    container_name: goaline_client
+    ports:
+      - "5173:5173"
+    depends_on:
+      - server
