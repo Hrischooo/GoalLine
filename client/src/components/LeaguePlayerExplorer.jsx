@@ -1,5 +1,8 @@
 import ClubBadge from './ClubBadge';
+import PlayerHoverPreview from './PlayerHoverPreview';
+import PlayerTextBlock from './PlayerTextBlock';
 import { formatStatValue, formatTextValue } from '../utils/playerMetrics';
+import { getLeagueName } from '../utils/dataset';
 
 function PlayerStatPair({ label, value }) {
   return (
@@ -26,15 +29,18 @@ export default function LeaguePlayerExplorer({ canLoadMore, onLoadMore, onOpenPl
       <div className="league-explorer-list">
         {players.map((player) => (
           <button className="league-explorer-player" key={player.key} onClick={() => onOpenPlayer(player.key)} type="button">
-            <div className="league-explorer-player__identity">
-              <ClubBadge name={player.squad} size="medium" />
-              <div>
-                <strong>{formatTextValue(player.player, 'Unknown Player')}</strong>
-                <span>
-                  {formatTextValue(player.squad)} / {formatTextValue(player.exactPosition)} / {formatTextValue(player.primaryRole)}
-                </span>
+            <PlayerHoverPreview metrics={player.metrics} player={player}>
+              <div className="league-explorer-player__identity">
+                <ClubBadge name={player.squad} size="medium" />
+                <PlayerTextBlock
+                  club={player.squad}
+                  league={getLeagueName(player)}
+                  name={player.player}
+                  position={player.exactPosition}
+                  role={player.primaryRole}
+                />
               </div>
-            </div>
+            </PlayerHoverPreview>
 
             <div className="league-explorer-player__overview">
               <div className="league-explorer-player__ovr">

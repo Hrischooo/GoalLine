@@ -1,26 +1,61 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import '../styles/player-details.css';
+import PlayerBasicStatsReport from '../components/PlayerBasicStatsReport';
 import PlayerHeroCard from '../components/PlayerHeroCard';
+import PlayerScoutingReport from '../components/PlayerScoutingReport';
 import RoleFitCard from '../components/RoleFitCard';
 import SimilarPlayersTab from '../components/SimilarPlayersTab';
 import TacticalProfileCard from '../components/TacticalProfileCard';
 import { computeDisplayMetrics, formatStatValue, formatTextValue } from '../utils/playerMetrics';
-import { buildPlayerStatGroups, getLeagueName, getPlayerByIdOrUniqueKey } from '../utils/dataset';
+import { buildPlayerKey, getLeagueName, getPlayerByIdOrUniqueKey } from '../utils/dataset';
+import { buildBasicReportSections } from '../utils/playerViews';
+import { rememberRecentPlayer } from '../utils/recentPlayers';
 
-const HIGHLIGHT_STATS = [
-  ['Goals', 'goals'],
-  ['Assists', 'assists'],
-  ['xG', 'expected_goals'],
-  ['Shots P90', 'shots_p90'],
-  ['Key Passes', 'key_passes']
-];
+function getMetricModeStorageKey(playerKey) {
+  return `goalline-player-metric-mode:${playerKey}`;
+}
 
 export default function PlayerDetails({ header, leagueFilter, playerIdentifier, players, ratingIndex, onBack, onCompare, onOpenPlayer }) {
   const [activeTab, setActiveTab] = useState('overview');
+  const [metricMode, setMetricMode] = useState('advanced');
 
   useEffect(() => {
     setActiveTab('overview');
   }, [playerIdentifier]);
+
+  const player = getPlayerByIdOrUniqueKey(players.data, playerIdentifier);
+  const metrics = player ? computeDisplayMetrics(player, ratingIndex) : null;
+  const leagueName = player ? getLeagueName(player) : '';
+  const playerKey = player ? buildPlayerKey(player) : '';
+  const basicSections = useMemo(() => (player && metrics ? buildBasicReportSections(player, metrics) : []), [metrics, player]);
+
+  useEffect(() => {
+    if (!playerKey || typeof window === 'undefined') {
+      return;
+    }
+
+    const storedMetricMode = window.localStorage.getItem(getMetricModeStorageKey(playerKey));
+
+    if (storedMetricMode === 'basic' || storedMetricMode === 'advanced') {
+      setMetricMode(storedMetricMode);
+    } else {
+      setMetricMode('advanced');
+    }
+  }, [playerKey]);
+
+  useEffect(() => {
+    if (!playerKey || !player) {
+      return;
+    }
+
+    rememberRecentPlayer({
+      id: playerKey,
+      league: leagueName,
+      name: player.player,
+      pos: player.pos,
+      squad: player.squad
+    });
+  }, [leagueName, player, playerKey]);
 
   if (players.loading) {
     return (
@@ -54,8 +89,6 @@ export default function PlayerDetails({ header, leagueFilter, playerIdentifier, 
     );
   }
 
-  const player = getPlayerByIdOrUniqueKey(players.data, playerIdentifier);
-
   if (!player) {
     return (
       <main className="player-details-page">
@@ -72,9 +105,13 @@ export default function PlayerDetails({ header, leagueFilter, playerIdentifier, 
     );
   }
 
-  const metrics = computeDisplayMetrics(player, ratingIndex);
-  const statGroups = buildPlayerStatGroups(player);
-  const leagueName = getLeagueName(player);
+  function handleMetricModeChange(nextMode) {
+    setMetricMode(nextMode);
+
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(getMetricModeStorageKey(playerKey), nextMode);
+    }
+  }
 
   return (
     <main className="player-details-page">
@@ -191,52 +228,30 @@ export default function PlayerDetails({ header, leagueFilter, playerIdentifier, 
                   />
                 </section>
 
-                <section className="highlights-grid">
-                  {HIGHLIGHT_STATS.map(([label, key]) => (
-                    <article className="highlight-card" key={key}>
-                      <span>{label}</span>
-                      <strong>{formatStatValue(player[key], 'N/A')}</strong>
-                    </article>
-                  ))}
-                </section>
+                <div className="metric-mode-tabs">
+                  <button
+                    className={`metric-mode-tabs__button${metricMode === 'basic' ? ' metric-mode-tabs__button--active' : ''}`}
+                    onClick={() => handleMetricModeChange('basic')}
+                    type="button"
+                  >
+                    Basic Stats
+                  </button>
+                  <button
+                    className={`metric-mode-tabs__button${metricMode === 'advanced' ? ' metric-mode-tabs__button--active' : ''}`}
+                    onClick={() => handleMetricModeChange('advanced')}
+                    type="button"
+                  >
+                    Advanced Metrics
+                  </button>
+                </div>
 
-                <section className="overview-strip">
-                  <article className="overview-card">
-                    <span>Goals + Assists</span>
-                    <strong>{formatStatValue(player.goals_and_assists, 'N/A')}</strong>
-                  </article>
-                  <article className="overview-card">
-                    <span>Goals P90</span>
-                    <strong>{formatStatValue(player.goals_p90, 'N/A')}</strong>
-                  </article>
-                  <article className="overview-card">
-                    <span>Assists P90</span>
-                    <strong>{formatStatValue(player.assists_p90, 'N/A')}</strong>
-                  </article>
-                  <article className="overview-card">
-                    <span>xG Non-Penalty</span>
-                    <strong>{formatStatValue(player.exp_npg, 'N/A')}</strong>
-                  </article>
-                </section>
-
-                <section className="groups-grid">
-                  {statGroups.map((group) => (
-                    <article className="group-card" key={group.title}>
-                      <div className="group-card__header">
-                        <h3>{group.title}</h3>
-                      </div>
-
-                      <div className="group-card__stats">
-                        {group.items.map((item) => (
-                          <div className="stat-row" key={item.key}>
-                            <span>{item.label}</span>
-                            <strong>{formatStatValue(item.value, 'N/A')}</strong>
-                          </div>
-                        ))}
-                      </div>
-                    </article>
-                  ))}
-                </section>
+                <div className={`metric-mode-panel${metricMode === 'advanced' ? ' metric-mode-panel--advanced' : ' metric-mode-panel--basic'}`}>
+                  {metricMode === 'advanced' ? (
+                    <PlayerScoutingReport metrics={metrics} playerName={player.player} />
+                  ) : (
+                    <PlayerBasicStatsReport playerName={player.player} sections={basicSections} />
+                  )}
+                </div>
               </>
             ) : (
               <SimilarPlayersTab

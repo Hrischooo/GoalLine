@@ -5,57 +5,8 @@ import CompareRoleFitSection from '../components/CompareRoleFitSection';
 import CompareStatsSection from '../components/CompareStatsSection';
 import CompareTacticalProfileSection from '../components/CompareTacticalProfileSection';
 import '../styles/compare.css';
-import { computeDisplayMetrics, formatStatValue } from '../utils/playerMetrics';
-import { buildPlayerKey, getCompareCandidates, getLeagueName, getPlayerByIdOrUniqueKey, LEAGUE_FILTERS } from '../utils/dataset';
-
-const BASE_COMPARISON_GROUPS = [
-  {
-    title: 'Attack',
-    stats: [
-      ['Goals', 'goals'],
-      ['Assists', 'assists'],
-      ['Expected Goals', 'expected_goals'],
-      ['Total Shots', 'total_shots'],
-      ['Shots P90', 'shots_p90']
-    ]
-  },
-  {
-    title: 'Creativity',
-    stats: [
-      ['Key Passes', 'key_passes'],
-      ['Progressive Passes', 'progressive_passes'],
-      ['Progressive Carries', 'progressive_carries'],
-      ['SCA P90', 'shot_creating_actions_p90'],
-      ['GCA P90', 'goal_creating_actions_p90']
-    ]
-  },
-  {
-    title: 'Possession',
-    stats: [
-      ['Pass Completion %', 'pass_completion_pct'],
-      ['Passes Completed', 'passes_completed'],
-      ['Passes Attempted', 'passes_attempted']
-    ]
-  },
-  {
-    title: 'Defending',
-    stats: [
-      ['Tackles Won', 'tackles_won'],
-      ['Interceptions', 'interceptions'],
-      ['Aerial Duels Won %', 'aerial_duels_won_pct']
-    ]
-  },
-  {
-    title: 'Goalkeeping',
-    stats: [
-      ['Goals Against', 'goals_against'],
-      ['Goals Against P90', 'goals_against_p90'],
-      ['Saves', 'saves'],
-      ['Save %', 'saves_pct'],
-      ['Clean Sheets', 'clean_sheets']
-    ]
-  }
-];
+import { computeDisplayMetrics, formatStatValue, toNumber } from '../utils/playerMetrics';
+import { buildPlayerKey, getCompareCandidates, getLeagueFilterValue, getLeagueName, getPlayerByIdOrUniqueKey, LEAGUE_FILTERS } from '../utils/dataset';
 
 const OVERVIEW_SCORE_ROWS = [
   ['Overall', 'finalOVR'],
@@ -78,10 +29,6 @@ function buildCompareUrl(player1, player2) {
 
   const queryString = params.toString();
   return queryString ? `/compare?${queryString}` : '/compare';
-}
-
-function hasRenderableValue(value) {
-  return value !== null && value !== undefined && value !== '';
 }
 
 function getScoreBarWidth(value) {
@@ -112,8 +59,17 @@ export default function Compare({ header, initialPlayer1, initialPlayer2, onNavi
 
         return {
           id: buildPlayerKey(player),
+          metrics,
           player,
           label: `${player.player} / ${player.squad} / ${getLeagueName(player)}`,
+          leagueId: getLeagueFilterValue(player),
+          leagueName: getLeagueName(player),
+          popularity:
+            toNumber(player.goals) * 10 +
+            toNumber(player.assists) * 8 +
+            toNumber(player.expected_goals) * 4 +
+            (toNumber(player.matches_played) * toNumber(player.avg_mins_per_match)) / 90,
+          positionFamily: metrics.positionFamily,
           searchText: [
             player.player,
             player.squad,
@@ -123,7 +79,12 @@ export default function Compare({ header, initialPlayer1, initialPlayer2, onNavi
             metrics.secondaryTacticalRoleLabel
           ]
             .filter(Boolean)
-            .join(' ')
+            .join(' '),
+          name: player.player,
+          team: player.squad,
+          position: player.pos,
+          nationality: player.nation,
+          league: getLeagueName(player)
         };
       }),
     [players.data, ratingIndex]
@@ -184,16 +145,6 @@ export default function Compare({ header, initialPlayer1, initialPlayer2, onNavi
 
   const leftMetrics = compareState.player1 ? computeDisplayMetrics(compareState.player1, ratingIndex) : null;
   const rightMetrics = compareState.player2 ? computeDisplayMetrics(compareState.player2, ratingIndex) : null;
-
-  const comparisonGroups = useMemo(() => {
-    if (!compareState.player1 || !compareState.player2) {
-      return BASE_COMPARISON_GROUPS;
-    }
-
-    return BASE_COMPARISON_GROUPS.filter((group) =>
-      group.stats.some(([_, key]) => hasRenderableValue(compareState.player1[key]) || hasRenderableValue(compareState.player2[key]))
-    );
-  }, [compareState.player1, compareState.player2]);
 
   useEffect(() => {
     console.debug('[compare]', {
@@ -290,9 +241,14 @@ export default function Compare({ header, initialPlayer1, initialPlayer2, onNavi
               </div>
             </section>
 
+            <CompareStatsSection
+              leftMetrics={leftMetrics}
+              leftPlayer={compareState.player1}
+              rightMetrics={rightMetrics}
+              rightPlayer={compareState.player2}
+            />
             <CompareTacticalProfileSection leftMetrics={leftMetrics} rightMetrics={rightMetrics} />
             <CompareRoleFitSection leftMetrics={leftMetrics} rightMetrics={rightMetrics} />
-            <CompareStatsSection groups={comparisonGroups} leftPlayer={compareState.player1} rightPlayer={compareState.player2} />
           </>
         ) : null}
       </div>

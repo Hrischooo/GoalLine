@@ -25,7 +25,7 @@ function getPathForResult(result) {
   return result.type === 'player' ? `/player/${result.id}` : `/league/${result.id}`;
 }
 
-export default function SearchBar({ leagueFilter, leagueOptions, leagues, onLeagueFilterChange, onNavigate, players }) {
+export default function SearchBar({ leagues, onNavigate, players }) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -182,22 +182,6 @@ export default function SearchBar({ leagueFilter, leagueOptions, leagues, onLeag
   return (
     <div className="search-bar" ref={containerRef}>
       <div className="search-bar__controls">
-        <label className="search-bar__field search-bar__field--filter" htmlFor="global-league-filter">
-          <span className="search-bar__label">League</span>
-          <select
-            className="search-bar__select"
-            id="global-league-filter"
-            onChange={(event) => onLeagueFilterChange(event.target.value)}
-            value={leagueFilter}
-          >
-            {leagueOptions.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
         <label className="search-bar__field search-bar__field--input" htmlFor="global-search-input">
           <span className="search-bar__label">Global Search</span>
           <input

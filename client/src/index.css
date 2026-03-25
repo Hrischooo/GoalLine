@@ -20,6 +20,7 @@
 body {
   margin: 0;
   min-height: 100vh;
+  overflow-x: hidden;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background:
     radial-gradient(circle at top left, rgba(73, 230, 255, 0.14), transparent 25%),
@@ -174,6 +175,7 @@ h1 {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+  min-width: 0;
 }
 
 .player-card__header h2 {
@@ -183,6 +185,15 @@ h1 {
 
 .player-card__header p {
   margin: 8px 0 0;
+}
+
+.player-card__identity,
+.search-result-entity,
+.leaderboard-card__identity,
+.league-explorer-player__identity,
+.compare-hero-player__subtitle,
+.compare-selector__selected-copy {
+  min-width: 0;
 }
 
 .player-card__nation {

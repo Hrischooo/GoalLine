@@ -211,6 +211,10 @@
   gap: 16px;
 }
 
+.home-leagues-grid .league-card {
+  width: 100%;
+}
+
 .home-league-card {
   display: grid;
   gap: 12px;
@@ -286,11 +290,193 @@
   color: var(--text-muted);
 }
 
+.home-discovery-section {
+  overflow: hidden;
+}
+
+.section-heading--discovery {
+  align-items: flex-start;
+}
+
+.home-discovery-section__actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.discovery-filters-toggle {
+  display: none;
+}
+
+.discovery-layout {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 20px;
+}
+
+.discovery-sidebar {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.discovery-sidebar__section,
+.discovery-results__toolbar,
+.discovery-player-card__meta span,
+.discovery-chip,
+.discovery-select {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+}
+
+.discovery-sidebar__section {
+  padding: 18px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.discovery-sidebar__heading h3 {
+  margin: 0;
+}
+
+.discovery-filter {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.discovery-filter > span,
+.discovery-sort span,
+.discovery-player-card__meta span {
+  color: var(--text-muted);
+}
+
+.discovery-filter__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.discovery-chip {
+  padding: 10px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-main);
+  cursor: pointer;
+  font: inherit;
+}
+
+.discovery-chip--active {
+  border-color: rgba(73, 230, 255, 0.28);
+  background: rgba(73, 230, 255, 0.12);
+}
+
+.discovery-select,
+.discovery-range {
+  width: 100%;
+}
+
+.discovery-select {
+  min-height: 42px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(12, 18, 40, 0.9);
+  color: var(--text-main);
+  font: inherit;
+}
+
+.discovery-range {
+  accent-color: #49e6ff;
+}
+
+.discovery-results {
+  min-width: 0;
+}
+
+.discovery-results__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-muted);
+}
+
+.discovery-sort {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.discovery-grid {
+  margin-top: 18px;
+}
+
+.discovery-player-card {
+  display: block;
+}
+
+.discovery-player-card__badges {
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+}
+
+.discovery-player-card__ovr {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  min-height: 52px;
+  padding: 10px;
+  border-radius: 16px;
+  background: rgba(73, 230, 255, 0.12);
+  color: var(--accent-cyan);
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.discovery-player-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.discovery-player-card__meta span {
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.discovery-player-card__stats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 @media (max-width: 1100px) {
   .home-hero,
   .info-strip,
   .home-leagues-grid {
     grid-template-columns: 1fr;
+  }
+
+  .discovery-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .discovery-filters-toggle {
+    display: inline-flex;
+  }
+
+  .discovery-sidebar {
+    display: none;
+  }
+
+  .discovery-sidebar--open {
+    display: grid;
   }
 }
 
@@ -305,5 +491,12 @@
   .browser-footer {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .discovery-results__toolbar,
+  .discovery-sort,
+  .home-discovery-section__actions {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

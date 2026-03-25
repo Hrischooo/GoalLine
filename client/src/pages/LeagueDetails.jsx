@@ -208,6 +208,9 @@ function buildLeaderboardBoard(id, title, statLabel, players, sortKey) {
       key: player.key,
       player: player.player,
       squad: player.squad,
+      league: player.league || player.comp,
+      age: player.age,
+      metrics: player.metrics,
       exactPosition: player.exactPosition,
       primaryRole: player.primaryRole,
       value: getSortValue(player, sortKey)

@@ -278,8 +278,9 @@ export function findPlayerRecord(players = [], playerIdentifier = '') {
   return getPlayerByIdOrUniqueKey(players, playerIdentifier);
 }
 
-export function buildSearchPlayerRecords(players = []) {
+export function buildSearchPlayerRecords(players = [], ratingIndex = {}) {
   return players.map((player) => {
+    const metrics = computeDisplayMetrics(player, ratingIndex);
     const name = player.player || 'Unknown Player';
     const team = player.squad || '';
     const position = player.pos || '';
@@ -295,11 +296,15 @@ export function buildSearchPlayerRecords(players = []) {
       position,
       nationality,
       league,
+      primaryRole: metrics.primaryTacticalRoleLabel,
+      metrics,
+      playerRecord: player,
       leagueFilterValue: getLeagueFilterValue(player),
       popularity:
         (toNumber(player.goals) || 0) * 10 +
         (toNumber(player.assists) || 0) * 8 +
-        (toNumber(player.expected_goals) || 0) * 4,
+        (toNumber(player.expected_goals) || 0) * 4 +
+        (toNumber(player.matches_played) * toNumber(player.avg_mins_per_match)) / 90,
       nameNormalized,
       nameTokens: nameNormalized.split(' ').filter(Boolean),
       metadataFieldsNormalized: metadataFields.map((field) => normalizeString(field)).filter(Boolean),

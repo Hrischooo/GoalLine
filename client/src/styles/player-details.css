@@ -408,6 +408,295 @@
   margin-top: 24px;
 }
 
+.metric-mode-tabs {
+  display: inline-flex;
+  gap: 10px;
+  margin-top: 24px;
+  padding: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.metric-mode-tabs__button {
+  min-height: 40px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.metric-mode-tabs__button--active,
+.metric-mode-tabs__button:hover {
+  background: rgba(73, 230, 255, 0.12);
+  border-color: rgba(73, 230, 255, 0.18);
+  color: var(--text-main);
+}
+
+.metric-mode-panel {
+  margin-top: 16px;
+}
+
+.metric-mode-panel--advanced,
+.metric-mode-panel--basic {
+  animation: metric-mode-fade 180ms ease;
+}
+
+@keyframes metric-mode-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.scouting-report {
+  margin-top: 24px;
+  padding: 22px;
+  border-radius: 28px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  background:
+    radial-gradient(circle at top right, rgba(181, 255, 68, 0.08), transparent 22%),
+    linear-gradient(180deg, rgba(16, 21, 46, 0.96), rgba(8, 11, 23, 0.98));
+}
+
+.scouting-report__header,
+.scouting-section__button,
+.scouting-metric__header,
+.scouting-metric__value-row,
+.scouting-report__meta {
+  display: flex;
+  align-items: center;
+}
+
+.scouting-report__header,
+.scouting-section__button,
+.scouting-metric__header,
+.scouting-metric__value-row {
+  justify-content: space-between;
+}
+
+.scouting-report__header {
+  gap: 18px;
+}
+
+.scouting-report__header h3,
+.scouting-section__button h4 {
+  margin: 0;
+}
+
+.scouting-report__subtitle,
+.scouting-section__button p,
+.scouting-metric__header span,
+.scouting-metric__value-row small,
+.scouting-section__footnote,
+.scouting-report__tag span {
+  color: var(--text-muted);
+}
+
+.scouting-report__subtitle {
+  margin: 10px 0 0;
+  max-width: 56ch;
+}
+
+.scouting-report__meta {
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.scouting-report__tag {
+  min-width: 160px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.scouting-report__tag strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--accent-lime);
+}
+
+.scouting-report__toggle {
+  white-space: nowrap;
+}
+
+.scouting-report__sections {
+  display: grid;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.scouting-section {
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+}
+
+.scouting-section--open {
+  border-color: rgba(73, 230, 255, 0.18);
+}
+
+.scouting-section__button {
+  width: 100%;
+  padding: 18px 20px;
+  border: 0;
+  background: transparent;
+  color: var(--text-main);
+  text-align: left;
+  cursor: pointer;
+}
+
+.scouting-section__button p {
+  margin: 8px 0 0;
+}
+
+.scouting-section__button span {
+  color: var(--accent-cyan);
+  font-weight: 700;
+}
+
+.scouting-section__body {
+  padding: 0 20px 20px;
+}
+
+.scouting-section__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.scouting-metric {
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: linear-gradient(180deg, rgba(21, 29, 60, 0.96), rgba(12, 16, 31, 0.98));
+}
+
+.scouting-metric--positive {
+  border-color: rgba(24, 210, 187, 0.24);
+}
+
+.scouting-metric--average {
+  border-color: rgba(255, 214, 102, 0.24);
+}
+
+.scouting-metric--negative {
+  border-color: rgba(255, 119, 119, 0.24);
+}
+
+.scouting-metric__info {
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-main);
+  font: inherit;
+  cursor: help;
+}
+
+.scouting-metric__value-row {
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.scouting-metric__value-row strong {
+  font-size: 1.65rem;
+}
+
+.scouting-metric--positive .scouting-metric__value-row strong {
+  color: var(--accent-lime);
+}
+
+.scouting-metric--average .scouting-metric__value-row strong {
+  color: #ffd666;
+}
+
+.scouting-metric--negative .scouting-metric__value-row strong {
+  color: #ff8c8c;
+}
+
+.scouting-metric__track {
+  height: 10px;
+  margin-top: 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.scouting-metric__fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(24, 210, 187, 0.96), rgba(73, 230, 255, 0.96));
+}
+
+.scouting-metric--average .scouting-metric__fill {
+  background: linear-gradient(90deg, rgba(255, 214, 102, 0.92), rgba(255, 176, 92, 0.96));
+}
+
+.scouting-metric--negative .scouting-metric__fill {
+  background: linear-gradient(90deg, rgba(255, 140, 140, 0.92), rgba(255, 106, 106, 0.96));
+}
+
+.scouting-section__footnote {
+  margin: 14px 0 0;
+}
+
+.basic-report-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.basic-metric-card {
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: linear-gradient(180deg, rgba(20, 27, 58, 0.96), rgba(10, 14, 28, 0.98));
+}
+
+.basic-metric-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.basic-metric-card__header span {
+  color: var(--text-muted);
+}
+
+.basic-metric-card__info {
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-main);
+  font: inherit;
+  cursor: help;
+}
+
+.basic-metric-card strong {
+  display: block;
+  margin-top: 14px;
+  font-size: 1.7rem;
+  color: var(--accent-cyan);
+}
+
 .tactical-card {
   padding: 20px;
   border-radius: 24px;
@@ -702,6 +991,8 @@
   .similar-controls,
   .tactical-grid,
   .score-grid,
+  .basic-report-grid,
+  .scouting-section__grid,
   .highlights-grid,
   .overview-strip,
   .groups-grid {
@@ -742,6 +1033,8 @@
   .player-meta-block,
   .tactical-grid,
   .score-grid,
+  .basic-report-grid,
+  .scouting-section__grid,
   .highlights-grid,
   .overview-strip,
   .groups-grid {
@@ -771,5 +1064,21 @@
 
   .similar-player-card__score {
     text-align: left;
+  }
+
+  .scouting-report__header,
+  .scouting-section__button {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .scouting-report__meta {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .metric-mode-tabs {
+    width: 100%;
+    flex-wrap: wrap;
   }
 }

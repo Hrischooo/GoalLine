@@ -3,7 +3,7 @@ require('dotenv').config();
 const cors = require('cors');
 const express = require('express');
 
-const { pool, query } = require('./db');
+const { databaseConfig, pool, query } = require('./db');
 
 const app = express();
 const port = Number(process.env.PORT) || 5000;
@@ -165,10 +165,11 @@ app.use((error, req, res, next) => {
 const server = app.listen(port, async () => {
   console.log(`[api] Server listening on http://localhost:${port}`);
   console.log('[api] Loaded database config', {
-    host: process.env.PGHOST,
-    port: process.env.PGPORT,
-    database: process.env.PGDATABASE,
-    user: process.env.PGUSER
+    source: databaseConfig.source,
+    host: databaseConfig.host,
+    port: databaseConfig.port,
+    database: databaseConfig.database,
+    user: databaseConfig.user
   });
 
   try {

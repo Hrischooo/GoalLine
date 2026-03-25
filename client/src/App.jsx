@@ -10,10 +10,8 @@ import {
   buildLeagueCatalogue,
   buildPlayerKey,
   buildSearchPlayerRecords,
-  filterPlayersByLeague,
   getAllPlayers,
   getCanonicalPlayers,
-  getLeagueFilterValue,
   getPlayerByIdOrUniqueKey,
   LEAGUE_FILTERS
 } from './utils/dataset';
@@ -114,7 +112,6 @@ export default function App() {
   const [status, setStatus] = useState({ loading: true, error: '', data: null });
   const [players, setPlayers] = useState({ loading: true, error: '', data: [], count: 0, columns: [] });
   const [route, setRoute] = useState(() => getRoute(window.location));
-  const [leagueFilter, setLeagueFilter] = useState(LEAGUE_FILTERS.all.id);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -173,8 +170,8 @@ export default function App() {
     }
 
     const allPlayers = getCanonicalPlayers(getAllPlayers(players.data || []));
-    const premierLeaguePlayers = filterPlayersByLeague(allPlayers, LEAGUE_FILTERS.premier_league.id).length;
-    const bundesligaPlayers = filterPlayersByLeague(allPlayers, LEAGUE_FILTERS.bundesliga.id).length;
+    const premierLeaguePlayers = allPlayers.filter((player) => player.league === 'Premier League' || player.comp === 'Premier League').length;
+    const bundesligaPlayers = allPlayers.filter((player) => player.league === 'Bundesliga' || player.comp === 'Bundesliga').length;
 
     console.debug('[all-players]', {
       totalPlayersLoaded: allPlayers.length,
@@ -213,14 +210,9 @@ export default function App() {
   }
 
   const canonicalPlayers = useMemo(() => getCanonicalPlayers(getAllPlayers(players.data || [])), [players.data]);
-  const filteredPlayers = useMemo(() => filterPlayersByLeague(canonicalPlayers, leagueFilter), [canonicalPlayers, leagueFilter]);
   const ratingIndex = useMemo(() => buildPlayerRatingIndex(canonicalPlayers), [canonicalPlayers]);
   const leagues = useMemo(() => buildLeagueCatalogue(canonicalPlayers, ratingIndex), [canonicalPlayers, ratingIndex]);
-  const visibleLeagues = useMemo(
-    () => (leagueFilter === LEAGUE_FILTERS.all.id ? leagues : leagues.filter((league) => league.id === leagueFilter)),
-    [leagueFilter, leagues]
-  );
-  const searchPlayers = useMemo(() => buildSearchPlayerRecords(filteredPlayers), [filteredPlayers]);
+  const searchPlayers = useMemo(() => buildSearchPlayerRecords(canonicalPlayers, ratingIndex), [canonicalPlayers, ratingIndex]);
 
   const fullPlayerDataset = useMemo(
     () => ({
@@ -235,10 +227,10 @@ export default function App() {
   const filteredPlayerDataset = useMemo(
     () => ({
       ...fullPlayerDataset,
-      data: filteredPlayers,
-      uniquePlayers: filteredPlayers.length
+      data: canonicalPlayers,
+      uniquePlayers: canonicalPlayers.length
     }),
-    [filteredPlayers, fullPlayerDataset]
+    [canonicalPlayers, fullPlayerDataset]
   );
 
   const resolvedPlayer = useMemo(
@@ -249,10 +241,8 @@ export default function App() {
   const header = (
     <AppHeader
       activePage={route.page}
-      leagueFilter={leagueFilter}
-      leagues={visibleLeagues}
+      leagues={leagues}
       onNavigate={navigateTo}
-      onLeagueFilterChange={setLeagueFilter}
       players={searchPlayers}
     />
   );
@@ -261,7 +251,7 @@ export default function App() {
     return (
       <PlayerDetails
         header={header}
-        leagueFilter={leagueFilter}
+        leagueFilter={LEAGUE_FILTERS.all.id}
         playerIdentifier={route.playerId || route.playerName || ''}
         players={fullPlayerDataset}
         ratingIndex={ratingIndex}
@@ -286,7 +276,7 @@ export default function App() {
   }
 
   if (route.page === 'league-overview') {
-    return <LeagueOverviewPage header={header} leagues={visibleLeagues} onNavigate={navigateTo} />;
+    return <LeagueOverviewPage header={header} leagues={leagues} onNavigate={navigateTo} />;
   }
 
   if (route.page === 'compare') {
@@ -295,7 +285,6 @@ export default function App() {
         header={header}
         initialPlayer1={route.player1}
         initialPlayer2={route.player2}
-        leagueFilter={leagueFilter}
         players={fullPlayerDataset}
         ratingIndex={ratingIndex}
         onNavigate={navigateTo}
@@ -303,7 +292,5 @@ export default function App() {
     );
   }
 
-  return (
-    <Home header={header} leagueFilter={leagueFilter} leagues={leagues} status={status} players={filteredPlayerDataset} onNavigate={navigateTo} />
-  );
+  return <Home header={header} leagues={leagues} status={status} players={filteredPlayerDataset} ratingIndex={ratingIndex} onNavigate={navigateTo} />;
 }

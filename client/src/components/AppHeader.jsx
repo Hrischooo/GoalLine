@@ -1,13 +1,12 @@
 import '../styles/search.css';
 import AppLogo from './AppLogo';
 import SearchBar from './SearchBar';
-import { LEAGUE_FILTERS } from '../utils/dataset';
 
 function getActiveClass(activePage, targetPages) {
   return targetPages.includes(activePage) ? ' app-header__nav-link--active' : '';
 }
 
-export default function AppHeader({ activePage, leagueFilter, leagues, onNavigate, onLeagueFilterChange, players }) {
+export default function AppHeader({ activePage, leagues, onNavigate, players }) {
   return (
     <header className="app-header">
       <button className="brand-lockup" type="button" onClick={() => onNavigate('/')}>
@@ -42,14 +41,7 @@ export default function AppHeader({ activePage, leagueFilter, leagues, onNavigat
         </button>
       </nav>
 
-      <SearchBar
-        leagueFilter={leagueFilter}
-        leagueOptions={Object.values(LEAGUE_FILTERS)}
-        leagues={leagues}
-        onLeagueFilterChange={onLeagueFilterChange}
-        onNavigate={onNavigate}
-        players={players}
-      />
+      <SearchBar leagues={leagues} onNavigate={onNavigate} players={players} />
     </header>
   );
 }

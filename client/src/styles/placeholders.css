@@ -117,7 +117,7 @@
 .league-header-row,
 .league-player-row__identity {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
 }
 

@@ -1,4 +1,6 @@
 import { buildPlayerKey } from '../utils/dataset';
+import PlayerHoverPreview from './PlayerHoverPreview';
+import PlayerTextBlock from './PlayerTextBlock';
 import { formatTextValue } from '../utils/playerMetrics';
 
 export default function SimilarPlayerCard({ result, onOpenPlayer }) {
@@ -8,12 +10,15 @@ export default function SimilarPlayerCard({ result, onOpenPlayer }) {
   return (
     <article className="similar-player-card">
       <div className="similar-player-card__header">
-        <div>
-          <h3>{formatTextValue(player?.player, 'Unknown Player')}</h3>
-          <p className="similar-player-card__club">
-            {formatTextValue(player?.squad)} / {formatTextValue(player?.comp || player?.league, 'Unknown League')}
-          </p>
-        </div>
+        <PlayerHoverPreview metrics={rating} player={player}>
+          <PlayerTextBlock
+            club={player?.squad}
+            league={player?.comp || player?.league}
+            name={player?.player}
+            position={rating?.exactPosition}
+            role={rating?.primaryTacticalRoleLabel}
+          />
+        </PlayerHoverPreview>
 
         <div className="similar-player-card__score">
           <span>Similarity</span>

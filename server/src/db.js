@@ -1,31 +1,45 @@
 const { Pool } = require('pg');
 
-const pool = new Pool({
-  host: process.env.PGHOST,
-  port: Number(process.env.PGPORT) || 5432,
-  database: process.env.PGDATABASE,
-  user: process.env.PGUSER,
-  password: process.env.PGPASSWORD
-});
+const databaseUrl = process.env.DATABASE_URL;
 
-pool.on('connect', () => {
-  console.log('[db] PostgreSQL pool connected');
-});
+const databaseConfig = databaseUrl
+  ? {
+      source: 'DATABASE_URL',
+      connectionString: databaseUrl,
+      host: 'db',
+      port: '5432',
+      database: 'goaline',
+      user: 'postgres',
+    }
+  : {
+      source: 'local',
+      host: process.env.DB_HOST || 'localhost',
+      port: process.env.DB_PORT || '5432',
+      database: process.env.DB_NAME || 'GoalLine',
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD || '123457698Hh#',
+    };
 
-pool.on('error', (error) => {
-  console.error('[db] Unexpected PostgreSQL pool error:', error);
-});
+const pool = databaseConfig.connectionString
+  ? new Pool({
+      connectionString: databaseConfig.connectionString,
+    })
+  : new Pool({
+      host: databaseConfig.host,
+      port: Number(databaseConfig.port),
+      database: databaseConfig.database,
+      user: databaseConfig.user,
+      password: databaseConfig.password,
+    });
 
 async function query(text, params = []) {
-  console.log('[db] Executing query', {
-    text: text.replace(/\s+/g, ' ').trim(),
-    params
-  });
-
+  console.log('[db] Executing query', { text, params });
   return pool.query(text, params);
 }
 
 module.exports = {
+  databaseConfig,
   pool,
-  query
+  query,
 };
+

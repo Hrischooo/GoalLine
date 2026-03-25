@@ -1,6 +1,6 @@
 .app-header {
   display: grid;
-  grid-template-columns: auto auto minmax(320px, 420px);
+  grid-template-columns: auto auto minmax(360px, 1fr);
   position: relative;
   align-items: center;
   gap: 14px;
@@ -54,17 +54,13 @@
 
 .search-bar__controls {
   display: grid;
-  grid-template-columns: minmax(132px, 156px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
 }
 
 .search-bar__field {
   display: grid;
   gap: 6px;
-}
-
-.search-bar__field--filter {
-  min-width: 0;
 }
 
 .search-bar__label {
@@ -74,7 +70,6 @@
   text-transform: uppercase;
 }
 
-.search-bar__select,
 .search-bar__input {
   width: 100%;
   min-height: 40px;
@@ -87,15 +82,10 @@
   outline: none;
 }
 
-.search-bar__select {
-  appearance: none;
-}
-
 .search-bar__input::placeholder {
   color: rgba(133, 146, 172, 0.8);
 }
 
-.search-bar__select:focus,
 .search-bar__input:focus {
   border-color: rgba(110, 205, 218, 0.4);
   box-shadow: 0 0 0 1px rgba(110, 205, 218, 0.16);
@@ -168,6 +158,11 @@
   min-width: 0;
 }
 
+.search-dropdown__primary .player-hover-preview-trigger {
+  min-width: 0;
+  flex: 1;
+}
+
 .search-dropdown__primary strong {
   color: #edf3ff;
   font-size: 0.92rem;
@@ -202,8 +197,16 @@
   align-items: center;
   gap: 8px;
   margin-top: 6px;
+  min-width: 0;
   color: rgba(150, 163, 186, 0.88);
   font: 0.78rem/1.35 "Consolas", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.search-dropdown__meta span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .search-dropdown__empty {

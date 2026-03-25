@@ -1,21 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
 import '../styles/home.css';
-import ClubBadge from '../components/ClubBadge';
-import { formatStatValue, formatTextValue } from '../utils/playerMetrics';
-import { buildPlayerKey, getLeagueDisplayName, getLeagueName, getSeasonDatasetLabel, LEAGUE_FILTERS } from '../utils/dataset';
+import '../styles/league-details.css';
+import LeagueCard from '../components/LeagueCard';
+import PlayerDiscoverySection from '../components/PlayerDiscoverySection';
+import { getSeasonDatasetLabel } from '../utils/dataset';
 
-const INITIAL_VISIBLE_PLAYERS = 60;
-const LOAD_MORE_PLAYERS = 60;
-
-export default function Home({ header, leagueFilter, leagues, status, players, onNavigate }) {
-  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_PLAYERS);
+export default function Home({ header, leagues, status, players, ratingIndex, onNavigate }) {
   const loadedPlayers = players.data || [];
   const seasonLabel = getSeasonDatasetLabel(loadedPlayers);
-  const visiblePlayers = useMemo(() => loadedPlayers.slice(0, visibleCount), [loadedPlayers, visibleCount]);
-
-  useEffect(() => {
-    setVisibleCount(INITIAL_VISIBLE_PLAYERS);
-  }, [loadedPlayers.length]);
 
   function scrollToPlayers() {
     const section = document.getElementById('players');
@@ -74,29 +65,6 @@ export default function Home({ header, leagueFilter, leagues, status, players, o
           </div>
         </section>
 
-        <section className="info-strip">
-          <article className="info-card">
-            <span>Database status</span>
-            <strong>{status.loading ? 'Checking' : status.error ? 'Unavailable' : 'Connected'}</strong>
-            <p>{status.error ? status.error : 'Express and PostgreSQL are responding.'}</p>
-          </article>
-          <article className="info-card">
-            <span>Search scope</span>
-            <strong>{players.loading ? '...' : players.uniquePlayers}</strong>
-            <p>Global search now indexes every loaded player instead of a capped sample.</p>
-          </article>
-          <article className="info-card">
-            <span>Leagues indexed</span>
-            <strong>{players.loading ? '...' : new Set(loadedPlayers.map((player) => getLeagueName(player))).size}</strong>
-            <p>League views are derived from the same full-database player source.</p>
-          </article>
-          <article className="info-card">
-            <span>Connection time</span>
-            <strong>{status.data?.time ? new Date(status.data.time).toLocaleTimeString() : 'N/A'}</strong>
-            <p>Latest successful API heartbeat from the backend.</p>
-          </article>
-        </section>
-
         <section className="browser-section">
           <div className="section-heading">
             <div>
@@ -111,102 +79,15 @@ export default function Home({ header, leagueFilter, leagues, status, players, o
 
           <div className="home-leagues-grid">
             {leagues.map((league) => (
-              <button className="home-league-card" key={league.id} onClick={() => onNavigate(`/league/${league.id}`)} type="button">
-                <div className="home-league-card__top">
-                  <span>{league.name}</span>
-                  <strong>{league.averageOVR}</strong>
-                </div>
-                <p>
-                  {league.playersCount} players / {league.clubs} clubs / {league.season}
-                </p>
-                <div className="home-league-card__meta">
-                  <span>Top scorer: {league.topScorer}</span>
-                  <span>Top assister: {league.topAssister}</span>
-                </div>
-              </button>
+              <LeagueCard key={league.id} league={league} onOpen={(leagueId) => onNavigate(`/league/${leagueId}`)} />
             ))}
           </div>
         </section>
 
-        <section className="browser-section" id="players">
-          <div className="section-heading">
-            <div>
-              <p className="home-kicker">Player browser</p>
-              <h2>Complete Player Database</h2>
-              <p className="home-subtitle">
-                {leagueFilter === LEAGUE_FILTERS.all.id ? 'Showing all supported leagues.' : `Filtered to ${getLeagueDisplayName(leagueFilter)}.`}
-              </p>
-            </div>
-            <button className="secondary-button" type="button" onClick={() => onNavigate('/compare')}>
-              Compare two players
-            </button>
-          </div>
+        {players.error ? <p className="message error-message">Unable to load players: {players.error}</p> : null}
+        {players.loading ? <p className="message">Loading full database...</p> : null}
 
-          {players.error ? <p className="message error-message">Unable to load players: {players.error}</p> : null}
-          {players.loading ? <p className="message">Loading full database...</p> : null}
-
-          {!players.loading && !players.error ? (
-            <>
-              <section className="players-grid">
-                {visiblePlayers.map((player, index) => (
-                  <button
-                    className="player-card player-card--interactive home-player-card"
-                    key={`${player.player}-${player.squad}-${player.season}-${index}`}
-                    onClick={() => onNavigate(`/player/${buildPlayerKey(player)}`)}
-                    type="button"
-                  >
-                    <div className="player-card__header">
-                      <div className="player-card__identity">
-                        <ClubBadge name={player.squad} size="medium" />
-                        <div>
-                          <h2>{formatTextValue(player.player, 'Unknown Player')}</h2>
-                          <p>
-                            {formatTextValue(player.squad)} / {formatTextValue(getLeagueName(player))} / {formatTextValue(player.pos)}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="player-card__nation">{formatTextValue(player.nation)}</span>
-                    </div>
-                    <div className="player-stats">
-                      <div>
-                        <span>Goals</span>
-                        <strong className="accent-lime">{formatStatValue(player.goals)}</strong>
-                      </div>
-                      <div>
-                        <span>Assists</span>
-                        <strong className="accent-cyan">{formatStatValue(player.assists)}</strong>
-                      </div>
-                      <div>
-                        <span>xG</span>
-                        <strong className="accent-teal">{formatStatValue(player.expected_goals)}</strong>
-                      </div>
-                    </div>
-
-                    <div className="player-card__footer">
-                      <span>View analysis</span>
-                      <strong>{formatTextValue(player.season)}</strong>
-                    </div>
-                  </button>
-                ))}
-              </section>
-
-              <div className="browser-footer">
-                <span>
-                  Showing {visiblePlayers.length} of {loadedPlayers.length} players
-                </span>
-                {visiblePlayers.length < loadedPlayers.length ? (
-                  <button
-                    className="secondary-button"
-                    type="button"
-                    onClick={() => setVisibleCount((current) => Math.min(current + LOAD_MORE_PLAYERS, loadedPlayers.length))}
-                  >
-                    Load more players
-                  </button>
-                ) : null}
-              </div>
-            </>
-          ) : null}
-        </section>
+        {!players.loading && !players.error ? <PlayerDiscoverySection onNavigate={onNavigate} players={loadedPlayers} ratingIndex={ratingIndex} /> : null}
       </div>
     </main>
   );

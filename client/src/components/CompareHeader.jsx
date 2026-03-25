@@ -1,21 +1,30 @@
 import ClubBadge from './ClubBadge';
+import PlayerHoverPreview from './PlayerHoverPreview';
 import PlayerAvatar from './PlayerAvatar';
-import { formatTextValue } from '../utils/playerMetrics';
+import PlayerTextBlock from './PlayerTextBlock';
 import { getLeagueName } from '../utils/dataset';
 
 function PlayerSummary({ player, metrics, side, onOpenPlayer }) {
   return (
     <article className={`compare-hero-player compare-hero-player--${side}`}>
-      <div className="compare-hero-player__top">
-        <PlayerAvatar name={player.player} size="large" />
-        <div>
-          <p className="home-kicker">{side === 'left' ? 'Player A' : 'Player B'}</p>
-          <h2>{formatTextValue(player.player, 'Unknown Player')}</h2>
-          <p className="compare-hero-player__subtitle">
-            <ClubBadge name={player.squad} size="small" /> {formatTextValue(player.squad)} / {formatTextValue(getLeagueName(player))}
-          </p>
+      <PlayerHoverPreview metrics={metrics} player={player}>
+        <div className="compare-hero-player__top">
+          <PlayerAvatar name={player.player} size="large" />
+          <div>
+            <p className="home-kicker">{side === 'left' ? 'Player A' : 'Player B'}</p>
+            <div className="compare-hero-player__subtitle">
+              <ClubBadge name={player.squad} size="small" />
+              <PlayerTextBlock
+                club={player.squad}
+                league={getLeagueName(player)}
+                name={player.player}
+                position={metrics.exactPosition}
+                role={metrics.primaryTacticalRoleLabel}
+              />
+            </div>
+          </div>
         </div>
-      </div>
+      </PlayerHoverPreview>
 
       <div className="compare-hero-player__meta">
         <div>

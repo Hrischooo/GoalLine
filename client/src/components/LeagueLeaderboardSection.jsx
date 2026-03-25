@@ -1,5 +1,8 @@
 import ClubBadge from './ClubBadge';
+import PlayerHoverPreview from './PlayerHoverPreview';
+import PlayerTextBlock from './PlayerTextBlock';
 import { formatStatValue, formatTextValue } from '../utils/playerMetrics';
+import { getLeagueName } from '../utils/dataset';
 
 function LeaderboardCard({ board, onOpenPlayer }) {
   return (
@@ -18,15 +21,18 @@ function LeaderboardCard({ board, onOpenPlayer }) {
             type="button"
           >
             <span className="leaderboard-card__rank">{index + 1}</span>
-            <div className="leaderboard-card__identity">
-              <ClubBadge name={player.squad} size="small" />
-              <div>
-                <strong>{formatTextValue(player.player, 'Unknown Player')}</strong>
-                <span>
-                  {formatTextValue(player.exactPosition)} / {formatTextValue(player.primaryRole)}
-                </span>
+            <PlayerHoverPreview metrics={player.metrics || { exactPosition: player.exactPosition, primaryTacticalRoleLabel: player.primaryRole }} player={player}>
+              <div className="leaderboard-card__identity">
+                <ClubBadge name={player.squad} size="small" />
+                <PlayerTextBlock
+                  club={player.squad}
+                  league={getLeagueName(player)}
+                  name={player.player}
+                  position={player.exactPosition}
+                  role={player.primaryRole}
+                />
               </div>
-            </div>
+            </PlayerHoverPreview>
             <strong className="leaderboard-card__value">{formatStatValue(player.value, 'N/A')}</strong>
           </button>
         ))}

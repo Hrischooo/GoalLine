@@ -2,13 +2,15 @@ import { memo } from 'react';
 import { createPortal } from 'react-dom';
 import ClubBadge from './ClubBadge';
 import LeagueBadge from './LeagueBadge';
+import PlayerHoverPreview from './PlayerHoverPreview';
 import PlayerAvatar from './PlayerAvatar';
+import PlayerTextBlock from './PlayerTextBlock';
 
 function SearchRow({ result, isHighlighted, onSelect, onHover }) {
   const metadata =
     result.type === 'player'
-      ? [result.team, result.position, result.nationality, result.league].filter(Boolean).join(' • ')
-      : [result.country, result.season, result.division].filter(Boolean).join(' • ');
+      ? [result.team, result.position, result.nationality, result.league].filter(Boolean).join(' \u2022 ')
+      : [result.country, result.season, result.division].filter(Boolean).join(' \u2022 ');
 
   return (
     <li className="search-dropdown__item" role="presentation">
@@ -22,10 +24,25 @@ function SearchRow({ result, isHighlighted, onSelect, onHover }) {
       >
         <div className="search-dropdown__primary">
           {result.type === 'player' ? <PlayerAvatar name={result.name} size="small" /> : <LeagueBadge name={result.name} size="small" />}
-          <div className="search-result-entity">
-            <span className={`search-badge search-badge--${result.type}`}>{result.type === 'player' ? 'PLAYER' : 'LEAGUE'}</span>
-            <strong>{result.name}</strong>
-          </div>
+          {result.type === 'player' ? (
+            <PlayerHoverPreview metrics={result.metrics} player={result.playerRecord}>
+              <div className="search-result-entity">
+                <span className={`search-badge search-badge--${result.type}`}>{result.type === 'player' ? 'PLAYER' : 'LEAGUE'}</span>
+                <PlayerTextBlock
+                  club={result.team}
+                  league={result.league}
+                  name={result.name}
+                  position={result.position}
+                  role={result.primaryRole}
+                />
+              </div>
+            </PlayerHoverPreview>
+          ) : (
+            <div className="search-result-entity">
+              <span className={`search-badge search-badge--${result.type}`}>{result.type === 'player' ? 'PLAYER' : 'LEAGUE'}</span>
+              <strong>{result.name}</strong>
+            </div>
+          )}
         </div>
         <div className="search-dropdown__meta">
           {result.type === 'player' ? <ClubBadge name={result.team} size="small" /> : null}
@@ -46,7 +63,7 @@ function Section({ id, label, results, highlightedIndex, offset, onSelect, onHov
       <div className="search-dropdown__section-header">
         <span id={id}>{label}</span>
       </div>
-      <ul className="search-dropdown__list" role="group" aria-labelledby={id}>
+      <ul aria-labelledby={id} className="search-dropdown__list" role="group">
         {results.map((result, index) => (
           <SearchRow
             isHighlighted={highlightedIndex === offset + index}

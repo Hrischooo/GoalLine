@@ -17,6 +17,20 @@ function roundScore(value) {
   return Math.round(clamp(value, 1, 99));
 }
 
+function roundMetricValue(value, digits = 3) {
+  return Number(toNumber(value).toFixed(digits));
+}
+
+function safeDivide(numerator, denominator, scale = 1) {
+  const numericDenominator = toNumber(denominator);
+
+  if (numericDenominator <= 0) {
+    return 0;
+  }
+
+  return (toNumber(numerator) / numericDenominator) * scale;
+}
+
 function getInitials(name) {
   if (!name) {
     return 'GL';
@@ -75,6 +89,20 @@ const EXACT_POSITION_GROUPS = {
   goalkeeper: 'goalkeeper'
 };
 
+const POSITION_FAMILIES = {
+  goalkeeper: 'goalkeeper',
+  defender: 'defender',
+  midfielder: 'midfielder',
+  forward: 'forward'
+};
+
+const POSITION_FAMILY_LABELS = {
+  [POSITION_FAMILIES.goalkeeper]: 'Goalkeeper',
+  [POSITION_FAMILIES.defender]: 'Defender',
+  [POSITION_FAMILIES.midfielder]: 'Midfielder',
+  [POSITION_FAMILIES.forward]: 'Forward'
+};
+
 const EXACT_POSITION_ALIASES = {
   AM: 'CAM'
 };
@@ -93,6 +121,22 @@ const EXACT_POSITION_TO_GROUP = {
   LWB: EXACT_POSITION_GROUPS.fullBack,
   RWB: EXACT_POSITION_GROUPS.fullBack,
   GK: EXACT_POSITION_GROUPS.goalkeeper
+};
+
+const EXACT_POSITION_TO_FAMILY = {
+  GK: POSITION_FAMILIES.goalkeeper,
+  CB: POSITION_FAMILIES.defender,
+  LB: POSITION_FAMILIES.defender,
+  RB: POSITION_FAMILIES.defender,
+  LWB: POSITION_FAMILIES.defender,
+  RWB: POSITION_FAMILIES.defender,
+  DM: POSITION_FAMILIES.midfielder,
+  CM: POSITION_FAMILIES.midfielder,
+  CAM: POSITION_FAMILIES.midfielder,
+  ST: POSITION_FAMILIES.forward,
+  CF: POSITION_FAMILIES.forward,
+  LW: POSITION_FAMILIES.forward,
+  RW: POSITION_FAMILIES.forward
 };
 
 const POSITION_FALLBACKS = {
@@ -447,6 +491,318 @@ const DEBUG_SAMPLE_PLAYERS = [
   'Mohamed Salah'
 ];
 
+const SCOUTING_SECTION_ORDER = ['attacking', 'playmaking', 'possession', 'defensive', 'goalkeeping'];
+
+const SCOUTING_SECTION_META = {
+  attacking: {
+    key: 'attacking',
+    title: 'Attacking',
+    description: 'Shot quality, finishing, and direct goal threat.'
+  },
+  playmaking: {
+    key: 'playmaking',
+    title: 'Playmaking',
+    description: 'Chance creation and line-breaking distribution.'
+  },
+  possession: {
+    key: 'possession',
+    title: 'Possession & Dribbling',
+    description: 'Ball carrying, retention, and progression under pressure.'
+  },
+  defensive: {
+    key: 'defensive',
+    title: 'Defensive',
+    description: 'Defensive volume, duel efficiency, and error control.'
+  },
+  goalkeeping: {
+    key: 'goalkeeping',
+    title: 'Goalkeeping',
+    description: 'Shot stopping and prevention output.'
+  }
+};
+
+const SCOUTING_METRIC_DEFINITIONS = {
+  xg_diff: {
+    label: 'xG Diff',
+    section: 'attacking',
+    format: 'signed',
+    tooltip: 'Goals scored minus expected goals. Positive values suggest finishing above expected output.',
+    relevantFamilies: [POSITION_FAMILIES.forward, POSITION_FAMILIES.midfielder]
+  },
+  xg_per_shot: {
+    label: 'xG / Shot',
+    section: 'attacking',
+    format: 'decimal',
+    tooltip: 'Average expected goals value generated per shot.',
+    relevantFamilies: [POSITION_FAMILIES.forward, POSITION_FAMILIES.midfielder]
+  },
+  finishing_ratio: {
+    label: 'Finishing Ratio',
+    section: 'attacking',
+    format: 'decimal',
+    tooltip: 'Goals divided by expected goals. Values above 1 mean stronger finishing than expected.',
+    relevantFamilies: [POSITION_FAMILIES.forward, POSITION_FAMILIES.midfielder]
+  },
+  shots_on_target_pct: {
+    label: 'Shots On Target %',
+    section: 'attacking',
+    format: 'pct',
+    tooltip: 'Share of total shots that force a save or score.',
+    relevantFamilies: [POSITION_FAMILIES.forward, POSITION_FAMILIES.midfielder]
+  },
+  goals_per_shot: {
+    label: 'Goals / Shot',
+    section: 'attacking',
+    format: 'decimal',
+    tooltip: 'Goals scored per shot taken.',
+    relevantFamilies: [POSITION_FAMILIES.forward, POSITION_FAMILIES.midfielder]
+  },
+  goals_p90: {
+    label: 'Goals P90',
+    section: 'attacking',
+    format: 'decimal',
+    tooltip: 'Goals scored per 90 minutes.',
+    relevantFamilies: [POSITION_FAMILIES.forward, POSITION_FAMILIES.midfielder]
+  },
+  shots_p90: {
+    label: 'Shots P90',
+    section: 'attacking',
+    format: 'decimal',
+    tooltip: 'Shots attempted per 90 minutes.',
+    relevantFamilies: [POSITION_FAMILIES.forward, POSITION_FAMILIES.midfielder]
+  },
+  key_pass_eff: {
+    label: 'Key Pass Efficiency',
+    section: 'playmaking',
+    format: 'pct',
+    tooltip: 'Assists per key pass. A proxy for how often chance creation turns into goals.',
+    relevantFamilies: [POSITION_FAMILIES.forward, POSITION_FAMILIES.midfielder, POSITION_FAMILIES.defender]
+  },
+  progressive_pass_rate: {
+    label: 'Progressive Pass Rate',
+    section: 'playmaking',
+    format: 'pct',
+    tooltip: 'Progressive passes as a share of all passes attempted.',
+    relevantFamilies: [POSITION_FAMILIES.forward, POSITION_FAMILIES.midfielder, POSITION_FAMILIES.defender]
+  },
+  final_third_rate: {
+    label: 'Final Third Rate',
+    section: 'playmaking',
+    format: 'pct',
+    tooltip: 'Passes into the final third as a share of all passes attempted.',
+    relevantFamilies: [POSITION_FAMILIES.forward, POSITION_FAMILIES.midfielder, POSITION_FAMILIES.defender]
+  },
+  penalty_area_pass_rate: {
+    label: 'Penalty Area Pass Rate',
+    section: 'playmaking',
+    format: 'pct',
+    tooltip: 'Passes into the penalty area as a share of all passes attempted.',
+    relevantFamilies: [POSITION_FAMILIES.forward, POSITION_FAMILIES.midfielder, POSITION_FAMILIES.defender]
+  },
+  key_passes: {
+    label: 'Key Passes',
+    section: 'playmaking',
+    format: 'integer',
+    tooltip: 'Passes leading directly to a shot.',
+    relevantFamilies: [POSITION_FAMILIES.forward, POSITION_FAMILIES.midfielder, POSITION_FAMILIES.defender]
+  },
+  progressive_passes: {
+    label: 'Progressive Passes',
+    section: 'playmaking',
+    format: 'integer',
+    tooltip: 'Passes that move the ball significantly toward goal.',
+    relevantFamilies: [POSITION_FAMILIES.forward, POSITION_FAMILIES.midfielder, POSITION_FAMILIES.defender]
+  },
+  shot_creating_actions_p90: {
+    label: 'SCA P90',
+    section: 'playmaking',
+    format: 'decimal',
+    tooltip: 'Shot-creating actions per 90 minutes.',
+    relevantFamilies: [POSITION_FAMILIES.forward, POSITION_FAMILIES.midfielder, POSITION_FAMILIES.defender]
+  },
+  takeons_p90: {
+    label: 'Take-Ons P90',
+    section: 'possession',
+    format: 'decimal',
+    tooltip: 'Take-on attempts per 90 minutes.',
+    relevantFamilies: [POSITION_FAMILIES.forward, POSITION_FAMILIES.midfielder, POSITION_FAMILIES.defender]
+  },
+  risk_index: {
+    label: 'Risk Index',
+    section: 'possession',
+    format: 'pct',
+    invert: true,
+    tooltip: 'Possessions lost as a share of passing and carrying actions. Lower is better.',
+    relevantFamilies: [POSITION_FAMILIES.forward, POSITION_FAMILIES.midfielder, POSITION_FAMILIES.defender]
+  },
+  ball_retention: {
+    label: 'Ball Retention',
+    section: 'possession',
+    format: 'pct',
+    tooltip: 'Completed passes as a share of completed passes plus possessions lost.',
+    relevantFamilies: [POSITION_FAMILIES.forward, POSITION_FAMILIES.midfielder, POSITION_FAMILIES.defender]
+  },
+  carry_final_third_rate: {
+    label: 'Carry Final Third Rate',
+    section: 'possession',
+    format: 'pct',
+    tooltip: 'Carries into the final third as a share of progressive carries.',
+    relevantFamilies: [POSITION_FAMILIES.forward, POSITION_FAMILIES.midfielder, POSITION_FAMILIES.defender]
+  },
+  carry_penalty_rate: {
+    label: 'Carry Penalty Rate',
+    section: 'possession',
+    format: 'pct',
+    tooltip: 'Carries into the penalty area as a share of progressive carries.',
+    relevantFamilies: [POSITION_FAMILIES.forward, POSITION_FAMILIES.midfielder, POSITION_FAMILIES.defender]
+  },
+  progressive_carries: {
+    label: 'Progressive Carries',
+    section: 'possession',
+    format: 'integer',
+    tooltip: 'Carries that move the ball significantly toward goal.',
+    relevantFamilies: [POSITION_FAMILIES.forward, POSITION_FAMILIES.midfielder, POSITION_FAMILIES.defender]
+  },
+  successful_take_ons_pct: {
+    label: 'Successful Take-Ons %',
+    section: 'possession',
+    format: 'pct',
+    tooltip: 'Share of take-ons completed successfully.',
+    relevantFamilies: [POSITION_FAMILIES.forward, POSITION_FAMILIES.midfielder, POSITION_FAMILIES.defender]
+  },
+  tackle_success: {
+    label: 'Tackle Success',
+    section: 'defensive',
+    format: 'pct',
+    tooltip: 'Tackles won as a share of tackles attempted.',
+    relevantFamilies: [POSITION_FAMILIES.midfielder, POSITION_FAMILIES.defender]
+  },
+  def_actions: {
+    label: 'Def. Actions',
+    section: 'defensive',
+    format: 'integer',
+    tooltip: 'Combined tackles won, interceptions, clearances, and blocks.',
+    relevantFamilies: [POSITION_FAMILIES.midfielder, POSITION_FAMILIES.defender]
+  },
+  def_actions_p90: {
+    label: 'Def. Actions P90',
+    section: 'defensive',
+    format: 'decimal',
+    tooltip: 'Combined defensive actions per 90 minutes.',
+    relevantFamilies: [POSITION_FAMILIES.midfielder, POSITION_FAMILIES.defender]
+  },
+  def_engagement: {
+    label: 'Def. Engagement',
+    section: 'defensive',
+    format: 'decimal',
+    tooltip: 'Tackles attempted, interceptions, and blocks per 90 minutes.',
+    relevantFamilies: [POSITION_FAMILIES.midfielder, POSITION_FAMILIES.defender]
+  },
+  error_rate: {
+    label: 'Error Rate',
+    section: 'defensive',
+    format: 'decimal',
+    invert: true,
+    tooltip: 'Errors leading to chances or shots per 90 minutes. Lower is better.',
+    relevantFamilies: [POSITION_FAMILIES.midfielder, POSITION_FAMILIES.defender]
+  },
+  interceptions: {
+    label: 'Interceptions',
+    section: 'defensive',
+    format: 'integer',
+    tooltip: 'Passes intercepted before reaching the opponent.',
+    relevantFamilies: [POSITION_FAMILIES.midfielder, POSITION_FAMILIES.defender]
+  },
+  aerial_duels_won_pct: {
+    label: 'Aerial Duels Won %',
+    section: 'defensive',
+    format: 'pct',
+    tooltip: 'Share of aerial duels won.',
+    relevantFamilies: [POSITION_FAMILIES.defender]
+  },
+  save_eff: {
+    label: 'Save Efficiency',
+    section: 'goalkeeping',
+    format: 'pct',
+    tooltip: 'Save percentage against shots on target faced.',
+    relevantFamilies: [POSITION_FAMILIES.goalkeeper]
+  },
+  clean_sheet_rate: {
+    label: 'Clean Sheet Rate',
+    section: 'goalkeeping',
+    format: 'pct',
+    tooltip: 'Share of appearances ending with a clean sheet.',
+    relevantFamilies: [POSITION_FAMILIES.goalkeeper]
+  },
+  goals_against: {
+    label: 'Goals Against',
+    section: 'goalkeeping',
+    format: 'integer',
+    invert: true,
+    tooltip: 'Total goals conceded. Lower is better, especially across similar minutes.',
+    relevantFamilies: [POSITION_FAMILIES.goalkeeper]
+  },
+  goals_against_p90: {
+    label: 'Goals Against P90',
+    section: 'goalkeeping',
+    format: 'decimal',
+    invert: true,
+    tooltip: 'Goals conceded per 90 minutes.',
+    relevantFamilies: [POSITION_FAMILIES.goalkeeper]
+  },
+  crosses_stopped: {
+    label: 'Crosses Stopped',
+    section: 'goalkeeping',
+    format: 'integer',
+    tooltip: 'Crosses claimed or punched away successfully.',
+    relevantFamilies: [POSITION_FAMILIES.goalkeeper]
+  }
+};
+
+const SCOUTING_SECTION_METRIC_KEYS = {
+  attacking: ['xg_diff', 'finishing_ratio', 'shots_on_target_pct', 'goals_per_shot', 'xg_per_shot', 'goals_p90', 'shots_p90'],
+  playmaking: ['key_pass_eff', 'progressive_pass_rate', 'final_third_rate', 'penalty_area_pass_rate', 'key_passes', 'progressive_passes', 'shot_creating_actions_p90'],
+  possession: ['takeons_p90', 'risk_index', 'ball_retention', 'carry_final_third_rate', 'carry_penalty_rate', 'progressive_carries', 'successful_take_ons_pct'],
+  defensive: ['tackle_success', 'def_actions_p90', 'interceptions', 'error_rate', 'ball_retention', 'def_actions', 'def_engagement', 'aerial_duels_won_pct'],
+  goalkeeping: ['save_eff', 'clean_sheet_rate', 'goals_against', 'goals_against_p90', 'crosses_stopped']
+};
+
+const POSITION_PRIORITY_METRICS = {
+  [POSITION_FAMILIES.forward]: ['xg_diff', 'finishing_ratio', 'shots_on_target_pct', 'goals_per_shot', 'takeons_p90', 'risk_index'],
+  [POSITION_FAMILIES.midfielder]: ['key_pass_eff', 'progressive_pass_rate', 'final_third_rate', 'ball_retention', 'def_engagement'],
+  [POSITION_FAMILIES.defender]: ['tackle_success', 'def_actions_p90', 'interceptions', 'error_rate', 'ball_retention'],
+  [POSITION_FAMILIES.goalkeeper]: ['save_eff', 'clean_sheet_rate', 'goals_against']
+};
+
+const POSITION_DEFAULT_SCOUTING_SECTION = {
+  [POSITION_FAMILIES.forward]: 'attacking',
+  [POSITION_FAMILIES.midfielder]: 'playmaking',
+  [POSITION_FAMILIES.defender]: 'defensive',
+  [POSITION_FAMILIES.goalkeeper]: 'goalkeeping'
+};
+
+const ARCHETYPE_PROFILES = {
+  [POSITION_FAMILIES.forward]: [
+    { label: 'Finisher', metrics: ['xg_diff', 'finishing_ratio', 'goals_per_shot', 'shots_on_target_pct'] },
+    { label: 'Dribble Threat', metrics: ['takeons_p90', 'carry_penalty_rate', 'carry_final_third_rate', 'risk_index'] },
+    { label: 'Creative Forward', metrics: ['key_pass_eff', 'penalty_area_pass_rate', 'progressive_pass_rate', 'shot_creating_actions_p90'] }
+  ],
+  [POSITION_FAMILIES.midfielder]: [
+    { label: 'Playmaker', metrics: ['key_pass_eff', 'progressive_pass_rate', 'final_third_rate', 'penalty_area_pass_rate'] },
+    { label: 'Ball Progressor', metrics: ['progressive_pass_rate', 'carry_final_third_rate', 'carry_penalty_rate', 'ball_retention'] },
+    { label: 'Ball Winner', metrics: ['tackle_success', 'def_actions_p90', 'def_engagement', 'interceptions'] }
+  ],
+  [POSITION_FAMILIES.defender]: [
+    { label: 'Front-Foot Defender', metrics: ['tackle_success', 'def_actions_p90', 'def_engagement', 'interceptions'] },
+    { label: 'Ball-Playing Defender', metrics: ['progressive_pass_rate', 'final_third_rate', 'ball_retention', 'key_pass_eff'] },
+    { label: 'Recovery Defender', metrics: ['error_rate', 'aerial_duels_won_pct', 'interceptions', 'ball_retention'] }
+  ],
+  [POSITION_FAMILIES.goalkeeper]: [
+    { label: 'Shot Stopper', metrics: ['save_eff', 'clean_sheet_rate', 'goals_against_p90'] },
+    { label: 'Reliable Keeper', metrics: ['clean_sheet_rate', 'goals_against', 'crosses_stopped'] }
+  ]
+};
+
 function normalizeExactPosition(position) {
   const normalized = String(position || '').trim().toUpperCase();
   return EXACT_POSITION_ALIASES[normalized] || normalized;
@@ -488,12 +844,15 @@ function getPositionContext(player) {
   const listedPositions = parseListedPositions(player);
   const exactPosition = listedPositions[0] || 'CM';
   const exactPositionGroup = EXACT_POSITION_TO_GROUP[exactPosition] || EXACT_POSITION_GROUPS.centralMidfielder;
+  const positionFamily = EXACT_POSITION_TO_FAMILY[exactPosition] || POSITION_FAMILIES.midfielder;
 
   return {
     listedPositions,
     exactPosition,
     exactPositionGroup,
-    secondaryPositionGroupCandidate: resolveSecondaryPositionGroupCandidate(listedPositions)
+    secondaryPositionGroupCandidate: resolveSecondaryPositionGroupCandidate(listedPositions),
+    positionFamily,
+    positionFamilyLabel: POSITION_FAMILY_LABELS[positionFamily]
   };
 }
 
@@ -503,6 +862,10 @@ export function resolveExactPositionGroup(player) {
 
 export function resolvePositionGroup(player) {
   return resolveExactPositionGroup(player);
+}
+
+export function resolvePositionFamily(player) {
+  return getPositionContext(player).positionFamily;
 }
 
 export function getPercentile(sortedValues, rawValue) {
@@ -623,6 +986,244 @@ function getAveragedPercentile(groupLookup, positionGroup, player, metricKeys, i
   }
 
   return availableScores.reduce((total, score) => total + score, 0) / availableScores.length;
+}
+
+function getEstimatedMinutes(player) {
+  return toNumber(player?.matches_played) * toNumber(player?.avg_mins_per_match);
+}
+
+function calculateScoutingMetricValue(player, metricKey) {
+  const minutes = getEstimatedMinutes(player);
+  const totalShots = toNumber(player?.total_shots);
+  const expectedGoals = toNumber(player?.expected_goals);
+  const goals = toNumber(player?.goals);
+  const passesAttempted = toNumber(player?.passes_attempted);
+  const progressiveCarries = toNumber(player?.progressive_carries);
+  const takeOnsAttempted = toNumber(player?.take_ons_attempted);
+  const possessionsLost = toNumber(player?.possessions_lost);
+  const tacklesAttempted = toNumber(player?.tackles_attempted);
+  const tacklesWon = toNumber(player?.tackles_won);
+  const interceptions = toNumber(player?.interceptions);
+  const clearances = toNumber(player?.clearances);
+  const passesBlocked = toNumber(player?.passes_blocked);
+  const shotsBlocked = toNumber(player?.shots_blocked);
+  const defensiveActions = tacklesWon + interceptions + clearances + passesBlocked + shotsBlocked;
+  const defensiveEngagements = tacklesAttempted + interceptions + passesBlocked + shotsBlocked;
+
+  switch (metricKey) {
+    case 'xg_diff':
+      return roundMetricValue(goals - expectedGoals);
+    case 'xg_per_shot':
+      return roundMetricValue(safeDivide(expectedGoals, totalShots));
+    case 'finishing_ratio':
+      return roundMetricValue(safeDivide(goals, expectedGoals));
+    case 'key_pass_eff':
+      return roundMetricValue(safeDivide(player?.assists, player?.key_passes, 100));
+    case 'progressive_pass_rate':
+      return roundMetricValue(safeDivide(player?.progressive_passes, passesAttempted, 100));
+    case 'final_third_rate':
+      return roundMetricValue(safeDivide(player?.passes_into_final_third, passesAttempted, 100));
+    case 'penalty_area_pass_rate':
+      return roundMetricValue(safeDivide(player?.passes_into_penalty_area, passesAttempted, 100));
+    case 'takeons_p90':
+      return roundMetricValue(safeDivide(takeOnsAttempted, minutes, 90));
+    case 'risk_index':
+      return roundMetricValue(safeDivide(possessionsLost, passesAttempted + takeOnsAttempted + progressiveCarries, 100));
+    case 'ball_retention':
+      return roundMetricValue(safeDivide(player?.passes_completed, toNumber(player?.passes_completed) + possessionsLost, 100));
+    case 'carry_final_third_rate':
+      return roundMetricValue(safeDivide(player?.carries_final_3rd, progressiveCarries, 100));
+    case 'carry_penalty_rate':
+      return roundMetricValue(safeDivide(player?.carries_penalty_area, progressiveCarries, 100));
+    case 'tackle_success':
+      return roundMetricValue(safeDivide(tacklesWon, tacklesAttempted, 100));
+    case 'def_actions':
+      return roundMetricValue(defensiveActions);
+    case 'def_actions_p90':
+      return roundMetricValue(safeDivide(defensiveActions, minutes, 90));
+    case 'def_engagement':
+      return roundMetricValue(safeDivide(defensiveEngagements, minutes, 90));
+    case 'error_rate':
+      return roundMetricValue(safeDivide(player?.errors_made, minutes, 90));
+    case 'save_eff':
+      return roundMetricValue(player?.saves_pct);
+    case 'clean_sheet_rate':
+      return roundMetricValue(player?.clean_sheets_pct);
+    default:
+      return roundMetricValue(player?.[metricKey]);
+  }
+}
+
+function getScoutingMetricStatus(percentile) {
+  if (percentile >= 67) {
+    return 'positive';
+  }
+
+  if (percentile >= 34) {
+    return 'average';
+  }
+
+  return 'negative';
+}
+
+function getRelevantScoutingMetricKeys(positionFamily) {
+  return SCOUTING_SECTION_ORDER.flatMap((sectionKey) =>
+    (SCOUTING_SECTION_METRIC_KEYS[sectionKey] || []).filter((metricKey) =>
+      SCOUTING_METRIC_DEFINITIONS[metricKey]?.relevantFamilies?.includes(positionFamily)
+    )
+  ).filter((metricKey, index, metricKeys) => metricKeys.indexOf(metricKey) === index);
+}
+
+function buildScoutingMetricContext(players) {
+  const familyLookup = Object.fromEntries(
+    Object.values(POSITION_FAMILIES).map((positionFamily) => [
+      positionFamily,
+      {
+        metrics: {},
+        snapshots: []
+      }
+    ])
+  );
+  const snapshotsByKey = {};
+
+  for (const player of players) {
+    const uniqueKey = getRatingLookupKey(player);
+    const nameKey = normalizeString(player?.player || '');
+
+    if (!uniqueKey) {
+      continue;
+    }
+
+    const positionFamily = resolvePositionFamily(player);
+    const rawMetrics = Object.fromEntries(
+      Object.keys(SCOUTING_METRIC_DEFINITIONS).map((metricKey) => [metricKey, calculateScoutingMetricValue(player, metricKey)])
+    );
+
+    familyLookup[positionFamily].snapshots.push(rawMetrics);
+    snapshotsByKey[uniqueKey] = {
+      positionFamily,
+      rawMetrics
+    };
+
+    if (nameKey && !snapshotsByKey[nameKey]) {
+      snapshotsByKey[nameKey] = {
+        positionFamily,
+        rawMetrics
+      };
+    }
+  }
+
+  for (const positionFamily of Object.values(POSITION_FAMILIES)) {
+    for (const metricKey of getRelevantScoutingMetricKeys(positionFamily)) {
+      familyLookup[positionFamily].metrics[metricKey] = familyLookup[positionFamily].snapshots
+        .map((snapshot) => toNumber(snapshot[metricKey]))
+        .sort((left, right) => left - right);
+    }
+  }
+
+  return {
+    familyLookup,
+    snapshotsByKey
+  };
+}
+
+function buildScoutingMetricMap(positionFamily, rawMetrics, scoutingLookup) {
+  return Object.fromEntries(
+    getRelevantScoutingMetricKeys(positionFamily).map((metricKey) => {
+      const definition = SCOUTING_METRIC_DEFINITIONS[metricKey];
+      const value = rawMetrics[metricKey];
+      const sortedValues = scoutingLookup[positionFamily]?.metrics?.[metricKey] || [];
+      const percentile = definition?.invert ? getInversePercentile(sortedValues, value) : getPercentile(sortedValues, value);
+
+      return [
+        metricKey,
+        {
+          key: metricKey,
+          label: definition.label,
+          tooltip: definition.tooltip,
+          section: definition.section,
+          format: definition.format,
+          invert: Boolean(definition.invert),
+          value,
+          percentile: Number(percentile.toFixed(1)),
+          status: getScoutingMetricStatus(percentile)
+        }
+      ];
+    })
+  );
+}
+
+function getMetricPriorityIndex(metricKey, positionFamily) {
+  const priorityKeys = POSITION_PRIORITY_METRICS[positionFamily] || [];
+  const priorityIndex = priorityKeys.indexOf(metricKey);
+
+  if (priorityIndex !== -1) {
+    return priorityIndex;
+  }
+
+  const sectionMetricKeys = SCOUTING_SECTION_METRIC_KEYS[SCOUTING_METRIC_DEFINITIONS[metricKey]?.section] || [];
+  return priorityKeys.length + Math.max(sectionMetricKeys.indexOf(metricKey), 0);
+}
+
+function buildScoutingSections(positionFamily, metricMap) {
+  return SCOUTING_SECTION_ORDER.map((sectionKey) => {
+    if (sectionKey === 'goalkeeping' && positionFamily !== POSITION_FAMILIES.goalkeeper) {
+      return null;
+    }
+
+    if (sectionKey !== 'goalkeeping' && positionFamily === POSITION_FAMILIES.goalkeeper) {
+      return null;
+    }
+
+    const metrics = (SCOUTING_SECTION_METRIC_KEYS[sectionKey] || [])
+      .filter((metricKey) => SCOUTING_METRIC_DEFINITIONS[metricKey]?.relevantFamilies?.includes(positionFamily))
+      .map((metricKey) => metricMap[metricKey])
+      .filter(Boolean)
+      .sort((left, right) => {
+        const priorityDiff = getMetricPriorityIndex(left.key, positionFamily) - getMetricPriorityIndex(right.key, positionFamily);
+
+        if (priorityDiff !== 0) {
+          return priorityDiff;
+        }
+
+        return right.percentile - left.percentile;
+      });
+
+    if (!metrics.length) {
+      return null;
+    }
+
+    return {
+      ...SCOUTING_SECTION_META[sectionKey],
+      metrics,
+      compactCount: Math.min(4, metrics.length)
+    };
+  }).filter(Boolean);
+}
+
+function getAverageMetricPercentile(metricMap, metricKeys) {
+  const relevantMetrics = metricKeys.map((metricKey) => metricMap[metricKey]).filter(Boolean);
+
+  if (!relevantMetrics.length) {
+    return 0;
+  }
+
+  return relevantMetrics.reduce((total, metric) => total + metric.percentile, 0) / relevantMetrics.length;
+}
+
+function buildPlayerArchetype(positionFamily, metricMap) {
+  const profiles = ARCHETYPE_PROFILES[positionFamily] || [];
+
+  if (!profiles.length) {
+    return POSITION_FAMILY_LABELS[positionFamily] || 'Profile';
+  }
+
+  return profiles
+    .map((profile) => ({
+      label: profile.label,
+      score: getAverageMetricPercentile(metricMap, profile.metrics)
+    }))
+    .sort((left, right) => right.score - left.score || left.label.localeCompare(right.label))[0]?.label;
 }
 
 export function calculateExactPositionOVR(player, groupLookup, positionGroup = resolveExactPositionGroup(player)) {
@@ -768,6 +1369,7 @@ function buildCategoryScores(positionGroup, player, groupLookup) {
 
 export function buildPlayerRatingIndex(players = []) {
   const groupLookup = buildGroupMetricLookup(players);
+  const scoutingContext = buildScoutingMetricContext(players);
   const ratingsIndex = {};
 
   for (const player of players) {
@@ -798,11 +1400,21 @@ export function buildPlayerRatingIndex(players = []) {
       roleCount: rankedRoleScores.length
     });
     const categoryScores = buildCategoryScores(positionContext.exactPositionGroup, player, groupLookup);
+    const scoutingSnapshot = scoutingContext.snapshotsByKey[uniqueKey] || scoutingContext.snapshotsByKey[nameKey] || {
+      positionFamily: positionContext.positionFamily,
+      rawMetrics: Object.fromEntries(
+        Object.keys(SCOUTING_METRIC_DEFINITIONS).map((metricKey) => [metricKey, calculateScoutingMetricValue(player, metricKey)])
+      )
+    };
+    const scoutingMetricMap = buildScoutingMetricMap(positionContext.positionFamily, scoutingSnapshot.rawMetrics, scoutingContext.familyLookup);
+    const scoutingSections = buildScoutingSections(positionContext.positionFamily, scoutingMetricMap);
 
     const ratingEntry = {
       exactPosition: positionContext.exactPosition,
       exactPositionGroup: positionContext.exactPositionGroup,
       secondaryPositionGroupCandidate: positionContext.secondaryPositionGroupCandidate,
+      positionFamily: positionContext.positionFamily,
+      positionFamilyLabel: positionContext.positionFamilyLabel,
       tacticalRoleScores,
       primaryTacticalRole: primaryRole?.key || null,
       primaryTacticalRoleLabel: primaryRole?.label || '-',
@@ -818,6 +1430,11 @@ export function buildPlayerRatingIndex(players = []) {
       finalOVR,
       overall: finalOVR,
       positionGroup: positionContext.exactPositionGroup,
+      scoutingMetricMap,
+      scoutingSections,
+      compactMetricKeys: POSITION_PRIORITY_METRICS[positionContext.positionFamily] || [],
+      defaultScoutingSection: POSITION_DEFAULT_SCOUTING_SECTION[positionContext.positionFamily] || scoutingSections[0]?.key || null,
+      playerArchetype: buildPlayerArchetype(positionContext.positionFamily, scoutingMetricMap),
       ...categoryScores
     };
 
@@ -864,6 +1481,8 @@ export function computeDisplayMetrics(player, ratingIndex = {}) {
       summaryScore: 50,
       initials: getInitials(safePlayer.player),
       positionGroup: positionContext.exactPositionGroup,
+      positionFamily: positionContext.positionFamily,
+      positionFamilyLabel: positionContext.positionFamilyLabel,
       exactPosition: positionContext.exactPosition,
       exactPositionGroup: positionContext.exactPositionGroup,
       secondaryPositionGroupCandidate: positionContext.secondaryPositionGroupCandidate,
@@ -879,7 +1498,12 @@ export function computeDisplayMetrics(player, ratingIndex = {}) {
       secondaryTacticalRole: null,
       secondaryTacticalRoleLabel: '-',
       tacticalRoleConfidence: '-',
-      tacticalRoleGap: 0
+      tacticalRoleGap: 0,
+      scoutingMetricMap: {},
+      scoutingSections: [],
+      compactMetricKeys: POSITION_PRIORITY_METRICS[positionContext.positionFamily] || [],
+      defaultScoutingSection: POSITION_DEFAULT_SCOUTING_SECTION[positionContext.positionFamily] || null,
+      playerArchetype: POSITION_FAMILY_LABELS[positionContext.positionFamily] || 'Profile'
     };
   }
 
@@ -891,6 +1515,8 @@ export function computeDisplayMetrics(player, ratingIndex = {}) {
     summaryScore: rating.finalOVR,
     initials: getInitials(safePlayer.player),
     positionGroup: rating.exactPositionGroup,
+    positionFamily: rating.positionFamily,
+    positionFamilyLabel: rating.positionFamilyLabel,
     exactPosition: rating.exactPosition,
     exactPositionGroup: rating.exactPositionGroup,
     secondaryPositionGroupCandidate: rating.secondaryPositionGroupCandidate,
@@ -906,6 +1532,125 @@ export function computeDisplayMetrics(player, ratingIndex = {}) {
     secondaryTacticalRole: rating.secondaryTacticalRole,
     secondaryTacticalRoleLabel: rating.secondaryTacticalRoleLabel,
     tacticalRoleConfidence: rating.tacticalRoleConfidence,
-    tacticalRoleGap: rating.tacticalRoleGap
+    tacticalRoleGap: rating.tacticalRoleGap,
+    scoutingMetricMap: rating.scoutingMetricMap,
+    scoutingSections: rating.scoutingSections,
+    compactMetricKeys: rating.compactMetricKeys,
+    defaultScoutingSection: rating.defaultScoutingSection,
+    playerArchetype: rating.playerArchetype
+  };
+}
+
+function formatSignedValue(value) {
+  const numericValue = toNumber(value);
+  const formatted = formatStatValue(Math.abs(numericValue), '0');
+  return numericValue > 0 ? `+${formatted}` : numericValue < 0 ? `-${formatted}` : '0';
+}
+
+export function formatScoutingMetricValue(metricOrKey, maybeValue, fallback = '-') {
+  const metricKey = typeof metricOrKey === 'object' ? metricOrKey?.key : metricOrKey;
+  const value = typeof metricOrKey === 'object' ? metricOrKey?.value : maybeValue;
+  const definition = SCOUTING_METRIC_DEFINITIONS[metricKey];
+
+  if (value === null || value === undefined || value === '') {
+    return fallback;
+  }
+
+  switch (definition?.format) {
+    case 'signed':
+      return formatSignedValue(value);
+    case 'pct':
+      return `${formatStatValue(value, fallback)}%`;
+    case 'integer':
+      return String(Math.round(toNumber(value)));
+    default:
+      return formatStatValue(value, fallback);
+  }
+}
+
+function compareScoutingMetricValues(leftMetric, rightMetric, samePositionFamily) {
+  if (!leftMetric || !rightMetric) {
+    return 'tie';
+  }
+
+  const definition = SCOUTING_METRIC_DEFINITIONS[leftMetric.key];
+  const leftValue = samePositionFamily ? toNumber(leftMetric.value) : toNumber(leftMetric.percentile);
+  const rightValue = samePositionFamily ? toNumber(rightMetric.value) : toNumber(rightMetric.percentile);
+
+  if (leftValue === rightValue) {
+    return 'tie';
+  }
+
+  if (samePositionFamily && definition?.invert) {
+    return leftValue < rightValue ? 'left' : 'right';
+  }
+
+  return leftValue > rightValue ? 'left' : 'right';
+}
+
+export function buildScoutingComparison(leftMetrics, rightMetrics) {
+  const leftPositionFamily = leftMetrics?.positionFamily;
+  const rightPositionFamily = rightMetrics?.positionFamily;
+  const samePositionFamily = leftPositionFamily && leftPositionFamily === rightPositionFamily;
+  const leftRelevantMetrics = new Set(getRelevantScoutingMetricKeys(leftPositionFamily));
+  const rightRelevantMetrics = new Set(getRelevantScoutingMetricKeys(rightPositionFamily));
+  const allowedMetricKeys = samePositionFamily
+    ? [...leftRelevantMetrics]
+    : [...leftRelevantMetrics].filter((metricKey) => rightRelevantMetrics.has(metricKey));
+
+  let leftWins = 0;
+  let rightWins = 0;
+  let tieCount = 0;
+
+  const sections = SCOUTING_SECTION_ORDER.map((sectionKey) => {
+    const rows = (SCOUTING_SECTION_METRIC_KEYS[sectionKey] || [])
+      .filter((metricKey) => allowedMetricKeys.includes(metricKey))
+      .map((metricKey) => {
+        const leftMetric = leftMetrics?.scoutingMetricMap?.[metricKey];
+        const rightMetric = rightMetrics?.scoutingMetricMap?.[metricKey];
+
+        if (!leftMetric || !rightMetric) {
+          return null;
+        }
+
+        const winner = compareScoutingMetricValues(leftMetric, rightMetric, samePositionFamily);
+
+        if (winner === 'left') {
+          leftWins += 1;
+        } else if (winner === 'right') {
+          rightWins += 1;
+        } else {
+          tieCount += 1;
+        }
+
+        return {
+          key: metricKey,
+          label: leftMetric.label,
+          tooltip: leftMetric.tooltip,
+          winner,
+          leftMetric,
+          rightMetric
+        };
+      })
+      .filter(Boolean);
+
+    if (!rows.length) {
+      return null;
+    }
+
+    return {
+      ...SCOUTING_SECTION_META[sectionKey],
+      rows
+    };
+  }).filter(Boolean);
+
+  return {
+    samePositionFamily,
+    leftWins,
+    rightWins,
+    tieCount,
+    sections,
+    defaultOpenSection:
+      sections.find((section) => section.key === (samePositionFamily ? leftMetrics?.defaultScoutingSection : null))?.key || sections[0]?.key || null
   };
 }
