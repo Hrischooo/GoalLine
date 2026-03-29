@@ -1,4 +1,5 @@
 import ClubBadge from './ClubBadge';
+import OvrInlineValue from './OvrInlineValue';
 import PlayerHoverPreview from './PlayerHoverPreview';
 import PlayerAvatar from './PlayerAvatar';
 import PlayerTextBlock from './PlayerTextBlock';
@@ -27,10 +28,7 @@ function PlayerSummary({ player, metrics, side, onOpenPlayer }) {
       </PlayerHoverPreview>
 
       <div className="compare-hero-player__meta">
-        <div>
-          <span>OVR</span>
-          <strong>{metrics.finalOVR}</strong>
-        </div>
+        <OvrInlineValue className="compare-hero-player__ovr" metrics={metrics} value={metrics.finalOVR} />
         <div>
           <span>Position</span>
           <strong>{metrics.exactPosition}</strong>

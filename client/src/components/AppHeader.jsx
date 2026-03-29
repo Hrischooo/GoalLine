@@ -6,7 +6,7 @@ function getActiveClass(activePage, targetPages) {
   return targetPages.includes(activePage) ? ' app-header__nav-link--active' : '';
 }
 
-export default function AppHeader({ activePage, leagues, onNavigate, players }) {
+export default function AppHeader({ activePage, leagues, onNavigate, players, teams }) {
   return (
     <header className="app-header">
       <button className="brand-lockup" type="button" onClick={() => onNavigate('/')}>
@@ -26,7 +26,7 @@ export default function AppHeader({ activePage, leagues, onNavigate, players }) 
           Players
         </button>
         <button
-          className={`app-header__nav-link${getActiveClass(activePage, ['league-overview', 'league-details'])}`}
+          className={`app-header__nav-link${getActiveClass(activePage, ['league-overview', 'league-details', 'team-details'])}`}
           onClick={() => onNavigate('/leagues')}
           type="button"
         >
@@ -41,7 +41,7 @@ export default function AppHeader({ activePage, leagues, onNavigate, players }) 
         </button>
       </nav>
 
-      <SearchBar leagues={leagues} onNavigate={onNavigate} players={players} />
+      <SearchBar leagues={leagues} onNavigate={onNavigate} players={players} teams={teams} />
     </header>
   );
 }

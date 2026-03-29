@@ -4,11 +4,12 @@ const PROFILE_ROWS = [
   ['Exact Position', 'exactPosition'],
   ['Primary Role', 'primaryTacticalRoleLabel'],
   ['Secondary Role', 'secondaryTacticalRoleLabel'],
-  ['Role Confidence', 'tacticalRoleConfidence']
+  ['Role Confidence', 'tacticalRoleConfidence'],
+  ['Reliability', 'reliabilityLabel']
 ];
 
 function formatProfileValue(key, value) {
-  if (key === 'tacticalRoleConfidence' && value) {
+  if ((key === 'tacticalRoleConfidence' || key === 'reliabilityLabel') && value) {
     return String(value).charAt(0).toUpperCase() + String(value).slice(1);
   }
 

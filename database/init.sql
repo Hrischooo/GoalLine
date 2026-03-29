@@ -3984,6 +3984,111 @@ INSERT INTO public.premier_league_players_stage VALUES ('2844', 'Kurt Zouma', 'F
 INSERT INTO public.premier_league_players_stage VALUES ('2849', 'Martin Ã˜degaard', 'Norway', 'MF', 'Arsenal', 'Premier League', '24', '1998', '35', '3091', '8', '10', '18', '6', '2', '7.4', '5.8', '91', '344', '0.23', '0.29', '49', '17', '29.3', '1', '22', '15', '5', '0', '0', '0.0', '0', '0.0', '0', '0.0', '0.0', '1692', '2006', '84.3', '7898', '91.4', '85.3', '65.0', '102', '160', '130', '24', '81', '45.7', '46.9', '91', '83', '37', '58', '8', '75', '28.0', '0.61', '0.08', '0.29', '25.0', '6.41', '0.67', '0.0', '2023-2024', 'Martin Ødegaard', 'AM');
 
 
+--
+-- Name: teams; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS public.teams (
+    team_id text PRIMARY KEY,
+    name text NOT NULL UNIQUE,
+    display_name text,
+    league text NOT NULL,
+    country text NOT NULL,
+    manager text NOT NULL,
+    preferred_formation text NOT NULL,
+    play_style text NOT NULL,
+    form_last_5 text NOT NULL,
+    avg_age numeric(4,1),
+    squad_size integer,
+    logo text,
+    goals_scored integer,
+    goals_conceded integer,
+    clean_sheets integer,
+    detected_formation text
+);
+
+INSERT INTO public.teams (team_id, name, display_name, league, country, manager, preferred_formation, play_style, form_last_5, avg_age, squad_size, logo, goals_scored, goals_conceded, clean_sheets) VALUES
+    ('manchester-city', 'Manchester City', 'Manchester City', 'Premier League', 'England', 'Pep Guardiola', '3-2-4-1', 'Possession dominant, positional play, high press', 'W-W-W-D-W', NULL, NULL, '', NULL, NULL, NULL),
+    ('arsenal', 'Arsenal', 'Arsenal', 'Premier League', 'England', 'Mikel Arteta', '4-3-3', 'Positional build-up, high pressing, wide overloads', 'W-W-W-W-L', NULL, NULL, '', NULL, NULL, NULL),
+    ('liverpool', 'Liverpool', 'Liverpool', 'Premier League', 'England', 'Jürgen Klopp', '4-3-3', 'Gegenpressing, fast transitions, high tempo', 'W-D-W-W-W', NULL, NULL, '', NULL, NULL, NULL),
+    ('manchester-united', 'Manchester Utd', 'Manchester United', 'Premier League', 'England', 'Erik ten Hag', '4-2-3-1', 'Transitional, vertical attacks, structured build-up', 'L-W-W-D-L', NULL, NULL, '', NULL, NULL, NULL),
+    ('bayern-munich', 'Bayern Munich', 'Bayern Munich', 'Bundesliga', 'Germany', 'Thomas Tuchel', '4-2-3-1', 'High possession, attacking fullbacks', 'W-W-D-W-W', NULL, NULL, '', NULL, NULL, NULL),
+    ('bayer-leverkusen', 'Leverkusen', 'Bayer Leverkusen', 'Bundesliga', 'Germany', 'Xabi Alonso', '3-4-2-1', 'Fluid positional play, overloads, high press', 'W-W-W-W-W', NULL, NULL, '', NULL, NULL, NULL),
+    ('borussia-dortmund', 'Dortmund', 'Borussia Dortmund', 'Bundesliga', 'Germany', 'Edin Terzić', '4-2-3-1', 'Direct attacks, pace on wings', 'W-L-W-D-W', NULL, NULL, '', NULL, NULL, NULL),
+    ('rb-leipzig', 'RB Leipzig', 'RB Leipzig', 'Bundesliga', 'Germany', 'Marco Rose', '4-2-2-2', 'Vertical play, pressing, fast transitions', 'W-W-L-W-D', NULL, NULL, '', NULL, NULL, NULL)
+ON CONFLICT (team_id) DO NOTHING;
+
+INSERT INTO public.teams (team_id, name, display_name, league, country, manager, preferred_formation, play_style, form_last_5, logo)
+SELECT DISTINCT
+    lower(regexp_replace(regexp_replace(squad, '[^a-zA-Z0-9]+', '-', 'g'), '(^-|-$)', '', 'g')) AS team_id,
+    squad AS name,
+    squad AS display_name,
+    COALESCE(league, comp, 'Unknown League') AS league,
+    CASE
+        WHEN COALESCE(league, comp, '') = 'Premier League' THEN 'England'
+        WHEN COALESCE(league, comp, '') = 'Bundesliga' THEN 'Germany'
+        ELSE 'Unknown'
+    END AS country,
+    'Unknown' AS manager,
+    'N/A' AS preferred_formation,
+    'N/A' AS play_style,
+    'N/A' AS form_last_5,
+    '' AS logo
+FROM public.all_players
+WHERE COALESCE(trim(squad), '') <> ''
+ON CONFLICT (name) DO UPDATE SET
+    team_id = EXCLUDED.team_id,
+    display_name = COALESCE(public.teams.display_name, EXCLUDED.display_name),
+    league = EXCLUDED.league,
+    country = CASE
+        WHEN public.teams.country IS NULL OR public.teams.country = '' OR public.teams.country = 'Unknown' THEN EXCLUDED.country
+        ELSE public.teams.country
+    END,
+    manager = CASE
+        WHEN public.teams.manager IS NULL OR public.teams.manager = '' THEN EXCLUDED.manager
+        ELSE public.teams.manager
+    END,
+    preferred_formation = CASE
+        WHEN public.teams.preferred_formation IS NULL OR public.teams.preferred_formation = '' THEN EXCLUDED.preferred_formation
+        ELSE public.teams.preferred_formation
+    END,
+    play_style = CASE
+        WHEN public.teams.play_style IS NULL OR public.teams.play_style = '' THEN EXCLUDED.play_style
+        ELSE public.teams.play_style
+    END,
+    form_last_5 = CASE
+        WHEN public.teams.form_last_5 IS NULL OR public.teams.form_last_5 = '' THEN EXCLUDED.form_last_5
+        ELSE public.teams.form_last_5
+    END;
+
+INSERT INTO public.teams (team_id, name, display_name, league, country, manager, preferred_formation, play_style, form_last_5, logo) VALUES
+    ('manchester-city', 'Manchester City', 'Manchester City', 'Premier League', 'England', 'Pep Guardiola', '3-2-4-1', 'Possession dominant, positional play, high press', 'W-W-W-D-W', ''),
+    ('arsenal', 'Arsenal', 'Arsenal', 'Premier League', 'England', 'Mikel Arteta', '4-3-3', 'Positional build-up, high pressing, wide overloads', 'W-W-W-W-L', ''),
+    ('liverpool', 'Liverpool', 'Liverpool', 'Premier League', 'England', 'Jurgen Klopp', '4-3-3', 'Gegenpressing, fast transitions, high tempo', 'W-D-W-W-W', ''),
+    ('manchester-utd', 'Manchester Utd', 'Manchester United', 'Premier League', 'England', 'Erik ten Hag', '4-2-3-1', 'Transitional, vertical attacks, structured build-up', 'L-W-W-D-L', ''),
+    ('bayern-munich', 'Bayern Munich', 'Bayern Munich', 'Bundesliga', 'Germany', 'Thomas Tuchel', '4-2-3-1', 'High possession, attacking fullbacks', 'W-W-D-W-W', ''),
+    ('leverkusen', 'Leverkusen', 'Bayer Leverkusen', 'Bundesliga', 'Germany', 'Xabi Alonso', '3-4-2-1', 'Fluid positional play, overloads, high press', 'W-W-W-W-W', ''),
+    ('dortmund', 'Dortmund', 'Borussia Dortmund', 'Bundesliga', 'Germany', 'Edin Terzic', '4-2-3-1', 'Direct attacks, pace on wings', 'W-L-W-D-W', ''),
+    ('rb-leipzig', 'RB Leipzig', 'RB Leipzig', 'Bundesliga', 'Germany', 'Marco Rose', '4-2-2-2', 'Vertical play, pressing, fast transitions', 'W-W-L-W-D', '')
+ON CONFLICT (name) DO UPDATE SET
+    team_id = EXCLUDED.team_id,
+    display_name = EXCLUDED.display_name,
+    league = EXCLUDED.league,
+    country = EXCLUDED.country,
+    manager = EXCLUDED.manager,
+    preferred_formation = EXCLUDED.preferred_formation,
+    play_style = EXCLUDED.play_style,
+    form_last_5 = EXCLUDED.form_last_5,
+    logo = EXCLUDED.logo;
+
+ALTER TABLE public.all_players
+    ADD COLUMN IF NOT EXISTS overall_rating integer,
+    ADD COLUMN IF NOT EXISTS role_tag text,
+    ADD COLUMN IF NOT EXISTS position_group text;
+
+ALTER TABLE public.teams
+    ADD COLUMN IF NOT EXISTS detected_formation text;
+
 -- Completed on 2026-03-17 02:23:10
 
 --
@@ -3991,4 +4096,3 @@ INSERT INTO public.premier_league_players_stage VALUES ('2849', 'Martin Ã˜dega
 --
 
 \unrestrict phTwExi5dLzxyvg6d6bzRWkZWOqlEySbQCSYwJ803gNdq4ja8ZkZPUzOOQolD1D
-

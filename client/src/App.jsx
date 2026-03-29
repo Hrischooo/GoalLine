@@ -5,11 +5,15 @@ import Compare from './pages/Compare';
 import LeagueOverviewPage from './pages/LeagueOverviewPage';
 import LeagueDetails from './pages/LeagueDetails';
 import PlayerDetails from './pages/PlayerDetails';
+import TeamDetails from './pages/TeamDetails';
 import { buildPlayerRatingIndex } from './utils/playerMetrics';
 import {
   buildLeagueCatalogue,
   buildPlayerKey,
+  buildTeamCatalogue,
+  buildTeamSearchRecords,
   buildSearchPlayerRecords,
+  findTeamBySquadName,
   getAllPlayers,
   getCanonicalPlayers,
   getPlayerByIdOrUniqueKey,
@@ -30,7 +34,8 @@ function getRoute(locationLike = window.location) {
       player2: searchParams.get('player2') || '',
       playerId: '',
       playerName: '',
-      leagueId: ''
+      leagueId: '',
+      teamName: ''
     };
   }
 
@@ -41,7 +46,8 @@ function getRoute(locationLike = window.location) {
       player2: '',
       playerId: '',
       playerName: '',
-      leagueId: ''
+      leagueId: '',
+      teamName: ''
     };
   }
 
@@ -55,7 +61,8 @@ function getRoute(locationLike = window.location) {
         playerName: '',
         player1: '',
         player2: '',
-        leagueId: ''
+        leagueId: '',
+        teamName: ''
       };
     }
   }
@@ -70,7 +77,8 @@ function getRoute(locationLike = window.location) {
         playerName,
         player1: '',
         player2: '',
-        leagueId: ''
+        leagueId: '',
+        teamName: ''
       };
     }
   }
@@ -85,7 +93,24 @@ function getRoute(locationLike = window.location) {
         player2: '',
         playerId: '',
         playerName: '',
-        leagueId
+        leagueId,
+        teamName: ''
+      };
+    }
+  }
+
+  if (pathname.startsWith('/teams/')) {
+    const teamName = decodeURIComponent(pathname.replace('/teams/', ''));
+
+    if (teamName) {
+      return {
+        page: 'team-details',
+        player1: '',
+        player2: '',
+        playerId: '',
+        playerName: '',
+        leagueId: '',
+        teamName
       };
     }
   }
@@ -96,21 +121,15 @@ function getRoute(locationLike = window.location) {
     player2: '',
     playerId: '',
     playerName: '',
-    leagueId: ''
+    leagueId: '',
+    teamName: ''
   };
-}
-
-function toTitleCase(value = '') {
-  return value
-    .split(/[-_]/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
 }
 
 export default function App() {
   const [status, setStatus] = useState({ loading: true, error: '', data: null });
   const [players, setPlayers] = useState({ loading: true, error: '', data: [], count: 0, columns: [] });
+  const [teams, setTeams] = useState({ loading: true, error: '', data: [], count: 0 });
   const [route, setRoute] = useState(() => getRoute(window.location));
 
   useEffect(() => {
@@ -156,8 +175,33 @@ export default function App() {
       }
     }
 
+    async function loadTeams() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/teams`, {
+          signal: controller.signal
+        });
+
+        if (!response.ok) {
+          throw new Error(`Teams request failed with status ${response.status}`);
+        }
+
+        const data = await response.json();
+        setTeams({
+          loading: false,
+          error: '',
+          data: data.teams || [],
+          count: data.count || 0
+        });
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          setTeams({ loading: false, error: error.message, data: [], count: 0 });
+        }
+      }
+    }
+
     loadHealth();
     loadPlayers();
+    loadTeams();
 
     return () => {
       controller.abort();
@@ -212,7 +256,9 @@ export default function App() {
   const canonicalPlayers = useMemo(() => getCanonicalPlayers(getAllPlayers(players.data || [])), [players.data]);
   const ratingIndex = useMemo(() => buildPlayerRatingIndex(canonicalPlayers), [canonicalPlayers]);
   const leagues = useMemo(() => buildLeagueCatalogue(canonicalPlayers, ratingIndex), [canonicalPlayers, ratingIndex]);
+  const teamProfiles = useMemo(() => buildTeamCatalogue(teams.data || [], canonicalPlayers, ratingIndex), [canonicalPlayers, ratingIndex, teams.data]);
   const searchPlayers = useMemo(() => buildSearchPlayerRecords(canonicalPlayers, ratingIndex), [canonicalPlayers, ratingIndex]);
+  const searchTeams = useMemo(() => buildTeamSearchRecords(teamProfiles), [teamProfiles]);
 
   const fullPlayerDataset = useMemo(
     () => ({
@@ -237,6 +283,10 @@ export default function App() {
     () => getPlayerByIdOrUniqueKey(canonicalPlayers, route.playerId || route.playerName),
     [canonicalPlayers, route.playerId, route.playerName]
   );
+  const resolvedPlayerTeam = useMemo(
+    () => findTeamBySquadName(teamProfiles, resolvedPlayer?.squad || ''),
+    [resolvedPlayer?.squad, teamProfiles]
+  );
 
   const header = (
     <AppHeader
@@ -244,6 +294,7 @@ export default function App() {
       leagues={leagues}
       onNavigate={navigateTo}
       players={searchPlayers}
+      teams={searchTeams}
     />
   );
 
@@ -254,10 +305,29 @@ export default function App() {
         leagueFilter={LEAGUE_FILTERS.all.id}
         playerIdentifier={route.playerId || route.playerName || ''}
         players={fullPlayerDataset}
+        teams={teamProfiles}
         ratingIndex={ratingIndex}
         onBack={() => navigateTo('/')}
         onCompare={() => navigateTo(`/compare?player1=${encodeURIComponent(resolvedPlayer ? buildPlayerKey(resolvedPlayer) : '')}`)}
         onOpenPlayer={(playerKey) => navigateTo(`/player/${encodeURIComponent(playerKey)}`)}
+        onOpenTeam={() => {
+          if (resolvedPlayerTeam) {
+            navigateTo(`/teams/${encodeURIComponent(resolvedPlayerTeam.id)}`);
+          }
+        }}
+      />
+    );
+  }
+
+  if (route.page === 'team-details') {
+    return (
+      <TeamDetails
+        header={header}
+        players={fullPlayerDataset}
+        ratingIndex={ratingIndex}
+        teamIdentifier={route.teamName}
+        teams={{ ...teams, data: teamProfiles }}
+        onNavigate={navigateTo}
       />
     );
   }
@@ -271,6 +341,7 @@ export default function App() {
         onNavigate={navigateTo}
         players={fullPlayerDataset}
         ratingIndex={ratingIndex}
+        teams={teamProfiles}
       />
     );
   }

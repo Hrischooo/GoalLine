@@ -426,15 +426,18 @@
 }
 
 .discovery-player-card__ovr {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  justify-items: center;
   min-width: 52px;
   min-height: 52px;
   padding: 10px;
   border-radius: 16px;
   background: rgba(73, 230, 255, 0.12);
   color: var(--accent-cyan);
+}
+
+.discovery-player-card__ovr strong {
+  margin-top: 6px;
   font-size: 1.25rem;
   font-weight: 800;
 }

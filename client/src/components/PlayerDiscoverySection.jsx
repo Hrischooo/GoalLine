@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import ClubBadge from './ClubBadge';
 import LeagueBadge from './LeagueBadge';
+import OvrInlineValue from './OvrInlineValue';
 import PlayerHoverPreview from './PlayerHoverPreview';
 import PlayerTextBlock from './PlayerTextBlock';
 import { computeDisplayMetrics, formatStatValue, formatTextValue, toNumber } from '../utils/playerMetrics';
@@ -84,7 +85,9 @@ function PlayerDiscoveryCard({ player, metrics, onNavigate }) {
 
         <div className="discovery-player-card__badges">
           <LeagueBadge name={getLeagueName(player)} size="small" />
-          <span className="discovery-player-card__ovr">{metrics.finalOVR}</span>
+          <div className="discovery-player-card__ovr">
+            <OvrInlineValue metrics={metrics} value={metrics.finalOVR} />
+          </div>
         </div>
       </div>
 

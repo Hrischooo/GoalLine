@@ -1,4 +1,5 @@
 import ClubBadge from './ClubBadge';
+import OvrInlineValue from './OvrInlineValue';
 import PlayerHoverPreview from './PlayerHoverPreview';
 import PlayerTextBlock from './PlayerTextBlock';
 import { formatStatValue, formatTextValue } from '../utils/playerMetrics';
@@ -43,10 +44,7 @@ export default function LeaguePlayerExplorer({ canLoadMore, onLoadMore, onOpenPl
             </PlayerHoverPreview>
 
             <div className="league-explorer-player__overview">
-              <div className="league-explorer-player__ovr">
-                <span>OVR</span>
-                <strong>{formatStatValue(player.finalOVR, 'N/A')}</strong>
-              </div>
+              <OvrInlineValue className="league-explorer-player__ovr" metrics={player.metrics} value={formatStatValue(player.finalOVR, 'N/A')} />
               <div className="league-explorer-player__confidence">
                 <span>Confidence</span>
                 <strong>{formatTextValue(player.roleConfidence, '-')}</strong>

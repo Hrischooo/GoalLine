@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import CompareHeader from '../components/CompareHeader';
 import ComparePlayerSelector from '../components/ComparePlayerSelector';
+import CompareRadarSection from '../components/CompareRadarSection';
 import CompareRoleFitSection from '../components/CompareRoleFitSection';
 import CompareStatsSection from '../components/CompareStatsSection';
 import CompareTacticalProfileSection from '../components/CompareTacticalProfileSection';
@@ -241,6 +242,12 @@ export default function Compare({ header, initialPlayer1, initialPlayer2, onNavi
               </div>
             </section>
 
+            <CompareRadarSection
+              leftMetrics={leftMetrics}
+              leftPlayer={compareState.player1}
+              rightMetrics={rightMetrics}
+              rightPlayer={compareState.player2}
+            />
             <CompareStatsSection
               leftMetrics={leftMetrics}
               leftPlayer={compareState.player1}

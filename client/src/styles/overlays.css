@@ -25,6 +25,10 @@
   padding: 12px 14px;
 }
 
+.floating-tooltip--ovr {
+  width: min(340px, calc(100vw - 24px));
+}
+
 .floating-tooltip strong,
 .player-hover-card strong {
   display: block;
@@ -42,6 +46,72 @@
   margin: 8px 0 0;
   line-height: 1.45;
   overflow-wrap: anywhere;
+}
+
+.ovr-inline-value__label,
+.profile-score__label-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ovr-tooltip {
+  display: grid;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.ovr-tooltip__summary,
+.ovr-tooltip__categories {
+  display: grid;
+  gap: 10px;
+}
+
+.ovr-tooltip__summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ovr-tooltip__summary div,
+.ovr-tooltip__categories div {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ovr-tooltip__summary span,
+.ovr-tooltip__categories span,
+.ovr-tooltip__eyebrow,
+.ovr-tooltip__list span,
+.ovr-tooltip__note {
+  color: var(--text-muted);
+}
+
+.ovr-tooltip__eyebrow {
+  display: block;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ovr-tooltip__list {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  margin: 8px 0 0;
+  list-style: none;
+}
+
+.ovr-tooltip__list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ovr-tooltip__note {
+  margin: 0;
+  line-height: 1.5;
 }
 
 .player-hover-preview-trigger {
@@ -148,6 +218,10 @@
 }
 
 @media (max-width: 760px) {
+  .ovr-tooltip__summary {
+    grid-template-columns: 1fr;
+  }
+
   .player-text-block__name,
   .player-text-block__role,
   .player-text-block__context {

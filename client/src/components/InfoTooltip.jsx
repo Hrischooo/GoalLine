@@ -1,11 +1,32 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-export default function InfoTooltip({ description, label }) {
+export default function InfoTooltip({ className = '', content, description, label }) {
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const buttonRef = useRef(null);
   const tooltipRef = useRef(null);
+  const closeTimerRef = useRef(null);
+  const tooltipContent = content || <p>{description}</p>;
+
+  function clearCloseTimer() {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }
+
+  function openTooltip() {
+    clearCloseTimer();
+    setIsOpen(true);
+  }
+
+  function scheduleClose() {
+    clearCloseTimer();
+    closeTimerRef.current = setTimeout(() => {
+      setIsOpen(false);
+    }, 90);
+  }
 
   useEffect(() => {
     if (!isOpen) {
@@ -52,20 +73,28 @@ export default function InfoTooltip({ description, label }) {
     setPosition({ top, left });
   }, [isOpen]);
 
+  useEffect(
+    () => () => {
+      clearCloseTimer();
+    },
+    []
+  );
+
   return (
     <>
       <button
-        aria-label={`${label}: ${description}`}
+        aria-label={`${label}: ${description || 'More information'}`}
         className="floating-info-button"
-        onBlur={() => setIsOpen(false)}
+        onBlur={scheduleClose}
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();
+          clearCloseTimer();
           setIsOpen((current) => !current);
         }}
-        onFocus={() => setIsOpen(true)}
-        onMouseEnter={() => setIsOpen(true)}
-        onMouseLeave={() => setIsOpen(false)}
+        onFocus={openTooltip}
+        onMouseEnter={openTooltip}
+        onMouseLeave={scheduleClose}
         ref={buttonRef}
         type="button"
       >
@@ -74,9 +103,15 @@ export default function InfoTooltip({ description, label }) {
 
       {isOpen
         ? createPortal(
-            <div className="floating-tooltip" ref={tooltipRef} style={{ top: `${position.top}px`, left: `${position.left}px` }}>
+            <div
+              className={`floating-tooltip ${className}`.trim()}
+              onMouseEnter={openTooltip}
+              onMouseLeave={scheduleClose}
+              ref={tooltipRef}
+              style={{ top: `${position.top}px`, left: `${position.left}px` }}
+            >
               <strong>{label}</strong>
-              <p>{description}</p>
+              {tooltipContent}
             </div>,
             document.body
           )

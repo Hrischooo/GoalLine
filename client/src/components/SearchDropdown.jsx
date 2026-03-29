@@ -10,6 +10,8 @@ function SearchRow({ result, isHighlighted, onSelect, onHover }) {
   const metadata =
     result.type === 'player'
       ? [result.team, result.position, result.nationality, result.league].filter(Boolean).join(' \u2022 ')
+      : result.type === 'team'
+        ? [result.league, result.country, result.manager, result.formation].filter(Boolean).join(' \u2022 ')
       : [result.country, result.season, result.division].filter(Boolean).join(' \u2022 ');
 
   return (
@@ -23,7 +25,13 @@ function SearchRow({ result, isHighlighted, onSelect, onHover }) {
         type="button"
       >
         <div className="search-dropdown__primary">
-          {result.type === 'player' ? <PlayerAvatar name={result.name} size="small" /> : <LeagueBadge name={result.name} size="small" />}
+          {result.type === 'player' ? (
+            <PlayerAvatar name={result.name} size="small" />
+          ) : result.type === 'team' ? (
+            <ClubBadge name={result.name} size="small" />
+          ) : (
+            <LeagueBadge name={result.name} size="small" />
+          )}
           {result.type === 'player' ? (
             <PlayerHoverPreview metrics={result.metrics} player={result.playerRecord}>
               <div className="search-result-entity">
@@ -37,6 +45,11 @@ function SearchRow({ result, isHighlighted, onSelect, onHover }) {
                 />
               </div>
             </PlayerHoverPreview>
+          ) : result.type === 'team' ? (
+            <div className="search-result-entity">
+              <span className="search-badge search-badge--team">TEAM</span>
+              <strong>{result.name}</strong>
+            </div>
           ) : (
             <div className="search-result-entity">
               <span className={`search-badge search-badge--${result.type}`}>{result.type === 'player' ? 'PLAYER' : 'LEAGUE'}</span>
@@ -45,7 +58,7 @@ function SearchRow({ result, isHighlighted, onSelect, onHover }) {
           )}
         </div>
         <div className="search-dropdown__meta">
-          {result.type === 'player' ? <ClubBadge name={result.team} size="small" /> : null}
+          {result.type === 'player' ? <ClubBadge name={result.team} size="small" /> : result.type === 'team' ? <ClubBadge name={result.name} size="small" /> : null}
           <span>{metadata}</span>
         </div>
       </button>
@@ -87,6 +100,7 @@ function SearchDropdown({
   onHoverResult,
   onSelectResult,
   playersLabel,
+  teamsLabel,
   groupedResults,
   leaguesLabel
 }) {
@@ -95,7 +109,8 @@ function SearchDropdown({
   }
 
   const playerCount = groupedResults.players.length;
-  const hasResults = playerCount > 0 || groupedResults.leagues.length > 0;
+  const teamCount = groupedResults.teams.length;
+  const hasResults = playerCount > 0 || teamCount > 0 || groupedResults.leagues.length > 0;
 
   const content = (
     <div className="search-dropdown" role="listbox">
@@ -111,11 +126,20 @@ function SearchDropdown({
             onSelect={onSelectResult}
           />
           <Section
+            id="search-section-teams"
+            label={teamsLabel}
+            results={groupedResults.teams}
+            highlightedIndex={highlightedIndex}
+            offset={playerCount}
+            onHoverResult={onHoverResult}
+            onSelect={onSelectResult}
+          />
+          <Section
             id="search-section-leagues"
             label={leaguesLabel}
             results={groupedResults.leagues}
             highlightedIndex={highlightedIndex}
-            offset={playerCount}
+            offset={playerCount + teamCount}
             onHoverResult={onHoverResult}
             onSelect={onSelectResult}
           />

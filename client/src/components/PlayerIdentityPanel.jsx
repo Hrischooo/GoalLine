@@ -3,9 +3,10 @@ import PlayerAvatar from './PlayerAvatar';
 import PlayerMetaBlock from './PlayerMetaBlock';
 import { formatTextValue } from '../utils/playerMetrics';
 
-export default function PlayerIdentityPanel({ player, leagueName, metrics }) {
+export default function PlayerIdentityPanel({ player, leagueName, metrics, onOpenTeam }) {
   const metaItems = [
     { label: 'Position', value: metrics?.exactPosition },
+    { label: 'Role Tag', value: metrics?.playerArchetype },
     { label: 'Nation', value: player?.nation },
     { label: 'Season', value: player?.season }
   ];
@@ -22,7 +23,13 @@ export default function PlayerIdentityPanel({ player, leagueName, metrics }) {
         <p className="player-identity-panel__club">
           <span className="profile-club-row">
             <ClubBadge name={player?.squad} size="small" />
-            <span>{formatTextValue(player?.squad)}</span>
+            {onOpenTeam ? (
+              <button className="inline-link-button" onClick={onOpenTeam} type="button">
+                {formatTextValue(player?.squad)}
+              </button>
+            ) : (
+              <span>{formatTextValue(player?.squad)}</span>
+            )}
           </span>
         </p>
         <p className="player-identity-panel__league">{formatTextValue(leagueName, 'Unknown League')}</p>

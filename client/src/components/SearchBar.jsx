@@ -22,10 +22,18 @@ function useDebouncedValue(value, delay) {
 }
 
 function getPathForResult(result) {
-  return result.type === 'player' ? `/player/${result.id}` : `/league/${result.id}`;
+  if (result.type === 'player') {
+    return `/player/${result.id}`;
+  }
+
+  if (result.type === 'team') {
+    return `/teams/${result.id}`;
+  }
+
+  return `/league/${result.id}`;
 }
 
-export default function SearchBar({ leagues, onNavigate, players }) {
+export default function SearchBar({ leagues, onNavigate, players, teams }) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -41,6 +49,7 @@ export default function SearchBar({ leagues, onNavigate, players }) {
       return searchEntities({
         query: normalizedQuery,
         players,
+        teams,
         leagues,
         limit: 6
       });
@@ -48,11 +57,13 @@ export default function SearchBar({ leagues, onNavigate, players }) {
 
     return getPopularResults({
       players,
+      teams,
       leagues,
       playerLimit: 4,
+      teamLimit: 4,
       leagueLimit: 4
     });
-  }, [isSearching, leagues, normalizedQuery, players]);
+  }, [isSearching, leagues, normalizedQuery, players, teams]);
 
   const flatResults = useMemo(() => searchResultsToFlatList(groupedResults), [groupedResults]);
 
@@ -185,7 +196,7 @@ export default function SearchBar({ leagues, onNavigate, players }) {
         <label className="search-bar__field search-bar__field--input" htmlFor="global-search-input">
           <span className="search-bar__label">Global Search</span>
           <input
-            aria-label="Search player or league"
+            aria-label="Search player, team or league"
             autoComplete="off"
             className="search-bar__input"
             id="global-search-input"
@@ -195,7 +206,7 @@ export default function SearchBar({ leagues, onNavigate, players }) {
             }}
             onFocus={() => setIsOpen(true)}
             onKeyDown={handleKeyDown}
-            placeholder="Search player or league..."
+            placeholder="Search player, team or league..."
             type="text"
             value={query}
           />
@@ -205,7 +216,7 @@ export default function SearchBar({ leagues, onNavigate, players }) {
       <SearchDropdown
         dropdownRef={dropdownRef}
         dropdownStyle={dropdownStyle}
-        emptyMessage={isSearching ? 'No matching players or leagues found' : 'No popular players or leagues available'}
+        emptyMessage={isSearching ? 'No matching players, teams or leagues found' : 'No popular players, teams or leagues available'}
         groupedResults={groupedResults}
         highlightedIndex={highlightedIndex}
         isOpen={isOpen}
@@ -213,6 +224,7 @@ export default function SearchBar({ leagues, onNavigate, players }) {
         onHoverResult={setHighlightedIndex}
         onSelectResult={handleSelectResult}
         playersLabel={isSearching ? 'Players' : 'Popular Players'}
+        teamsLabel={isSearching ? 'Teams' : 'Popular Teams'}
       />
     </div>
   );

@@ -1,5 +1,6 @@
 import { createRouteId, normalizeString } from './search';
 import { computeDisplayMetrics, toNumber } from './playerMetrics';
+import { buildTeamAnalytics } from './teamAnalytics';
 
 export const LEAGUE_FILTERS = {
   all: { id: 'all', label: 'All Leagues', country: 'Multi-League', division: 'Combined Dataset' },
@@ -127,6 +128,22 @@ function getSeasonSortValue(player) {
 
 function getRawLeagueName(player) {
   return player?.league || player?.comp || '';
+}
+
+export function getTeamDisplayName(team) {
+  if (!team) {
+    return 'Unknown Team';
+  }
+
+  return team.display_name || team.displayName || team.name || 'Unknown Team';
+}
+
+export function buildTeamKey(teamOrName) {
+  if (typeof teamOrName === 'string') {
+    return createRouteId(teamOrName);
+  }
+
+  return createRouteId(teamOrName?.team_id || getTeamDisplayName(teamOrName) || teamOrName?.name || '');
 }
 
 export function normalizeLeagueName(value = '') {
@@ -315,6 +332,36 @@ export function buildSearchPlayerRecords(players = [], ratingIndex = {}) {
   });
 }
 
+function buildSearchTeamRecord(team) {
+  const displayName = getTeamDisplayName(team);
+  const manager = team.manager || 'Unknown';
+  const formation = team.preferred_formation || 'N/A';
+  const league = team.league || '';
+  const country = team.country || '';
+  const searchFields = [displayName, team.name, manager, formation, league, country].filter(Boolean);
+
+  return {
+    id: buildTeamKey(team),
+    name: displayName,
+    teamName: team.name,
+    displayName,
+    manager,
+    formation,
+    league,
+    country,
+    form: team.form_last_5 || '',
+    metadataFieldsNormalized: [league, country, manager, formation].map((field) => normalizeString(field)).filter(Boolean),
+    nameNormalized: normalizeString(displayName),
+    nameTokens: normalizeString(displayName).split(' ').filter(Boolean),
+    popularity: (team.squadSize || 0) * 6 + (team.avgRating || 0) * 4 + (team.goalsScored || 0),
+    searchTextNormalized: searchFields.map((field) => normalizeString(field)).join(' ')
+  };
+}
+
+export function buildTeamSearchRecords(teams = []) {
+  return teams.map((team) => buildSearchTeamRecord(team));
+}
+
 export function buildLeagueCatalogue(players = [], ratingIndex = {}) {
   const groupedLeagues = new Map();
 
@@ -389,6 +436,125 @@ export function buildLeagueCatalogue(players = [], ratingIndex = {}) {
       popularity: league.popularity
     }))
     .sort((left, right) => right.playersCount - left.playersCount || left.name.localeCompare(right.name));
+}
+
+export function getTeamByIdOrName(teams = [], teamIdentifier = '') {
+  const normalizedTarget = normalizeString(teamIdentifier);
+
+  if (!normalizedTarget) {
+    return null;
+  }
+
+  return (
+    teams.find((team) =>
+      [
+        team.team_id,
+        team.name,
+        team.display_name,
+        team.displayName,
+        buildTeamKey(team),
+        createRouteId(team.name || ''),
+        createRouteId(getTeamDisplayName(team))
+      ]
+        .filter(Boolean)
+        .some((value) => normalizeString(value) === normalizedTarget)
+    ) || null
+  );
+}
+
+export function findTeamBySquadName(teams = [], squadName = '') {
+  return getTeamByIdOrName(teams, squadName);
+}
+
+export function getTeamPlayers(players = [], teamName = '') {
+  const normalizedTeamName = normalizeString(teamName);
+
+  return players
+    .filter((player) => normalizeString(player.squad) === normalizedTeamName)
+    .sort((left, right) => String(left.player || '').localeCompare(String(right.player || '')));
+}
+
+export function buildTeamCatalogue(teams = [], players = [], ratingIndex = {}) {
+  return teams
+    .map((team) => {
+      const squadPlayers = getTeamPlayers(players, team.name);
+      const squadRatings = squadPlayers.map((player) => computeDisplayMetrics(player, ratingIndex));
+      const analytics = buildTeamAnalytics(team, squadPlayers, ratingIndex);
+      const totalGoals = squadPlayers.reduce((sum, player) => sum + toNumber(player.goals), 0);
+      const totalAssists = squadPlayers.reduce((sum, player) => sum + toNumber(player.assists), 0);
+      const avgRating =
+        squadRatings.length > 0
+          ? Number((squadRatings.reduce((sum, metrics) => sum + toNumber(metrics.finalOVR), 0) / squadRatings.length).toFixed(1))
+          : 0;
+      const avgAge =
+        team.avg_age !== null && team.avg_age !== undefined && team.avg_age !== ''
+          ? Number(team.avg_age)
+          : squadPlayers.length
+            ? Number(
+                (
+                  squadPlayers.reduce((sum, player) => sum + toNumber(player.age), 0) /
+                  Math.max(squadPlayers.filter((player) => toNumber(player.age) > 0).length, 1)
+                ).toFixed(1)
+              )
+            : null;
+
+      return {
+        ...team,
+        id: buildTeamKey(team),
+        displayName: getTeamDisplayName(team),
+        formTokens:
+          String(team.form_last_5 || '')
+            .split('-')
+            .map((token) => token.trim())
+            .filter(Boolean).length > 0
+            ? String(team.form_last_5 || '')
+                .split('-')
+                .map((token) => token.trim())
+                .filter(Boolean)
+            : ['N/A'],
+        leagueId: normalizeLeagueName(team.league || ''),
+        squadSize: Number(team.squad_size || squadPlayers.length || 0),
+        avgAge: analytics.averageAge || avgAge,
+        squadPlayers,
+        avgGoals: squadPlayers.length ? Number((totalGoals / squadPlayers.length).toFixed(2)) : 0,
+        avgAssists: squadPlayers.length ? Number((totalAssists / squadPlayers.length).toFixed(2)) : 0,
+        totalAssists,
+        avgRating: analytics.teamRating || avgRating,
+        squadAverageRating: avgRating,
+        goalsScored: Number(team.goals_scored || totalGoals || 0),
+        goalsConceded: team.goals_conceded === null || team.goals_conceded === undefined ? null : Number(team.goals_conceded),
+        cleanSheets: team.clean_sheets === null || team.clean_sheets === undefined ? null : Number(team.clean_sheets),
+        detectedFormation: analytics.detectedFormation || team.detected_formation || team.detectedFormation || '',
+        teamRating: analytics.teamRating || avgRating,
+        formationConfidence: analytics.formationConfidence,
+        formationFitScore: analytics.formationFitScore,
+        bestXI: analytics.bestXI,
+        lineRatings: analytics.lineRatings,
+        strongestLine: analytics.strongestLine,
+        weakestLine: analytics.weakestLine,
+        positionDepth: analytics.positionDepth,
+        countsByPositionFamily: analytics.countsByPositionFamily,
+        starPlayer: analytics.starPlayer,
+        captain: analytics.captain,
+        topScorer: analytics.topScorer,
+        topCreator: analytics.topCreator,
+        youngTalents: analytics.youngTalents,
+        keyPlayers: analytics.keyPlayers,
+        tacticalIdentitySummary: analytics.tacticalIdentitySummary,
+        strengths: analytics.strengths,
+        weaknesses: analytics.weaknesses,
+        popularity: squadPlayers.length * 4 + (analytics.teamRating || avgRating) * 2 + totalGoals
+      };
+    })
+    .sort((left, right) => {
+      const leagueDiff = String(left.league || '').localeCompare(String(right.league || ''));
+
+      if (leagueDiff !== 0) {
+        return leagueDiff;
+      }
+
+      return getTeamDisplayName(left).localeCompare(getTeamDisplayName(right));
+    });
 }
 
 export function getLeagueById(leagues = [], leagueId) {

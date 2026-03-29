@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import '../styles/player-details.css';
 import PlayerBasicStatsReport from '../components/PlayerBasicStatsReport';
+import LeagueComparisonPanel from '../components/LeagueComparisonPanel';
 import PlayerHeroCard from '../components/PlayerHeroCard';
+import PlayerRadarPanel from '../components/PlayerRadarPanel';
 import PlayerScoutingReport from '../components/PlayerScoutingReport';
 import RoleFitCard from '../components/RoleFitCard';
 import SimilarPlayersTab from '../components/SimilarPlayersTab';
+import StrengthsWeaknessesPanel from '../components/StrengthsWeaknessesPanel';
 import TacticalProfileCard from '../components/TacticalProfileCard';
+import TransferIntelligencePanel from '../components/TransferIntelligencePanel';
 import { computeDisplayMetrics, formatStatValue, formatTextValue } from '../utils/playerMetrics';
+import { buildLeagueComparisonProfile, buildStrengthsWeaknessesProfile, buildTransferIntelligenceProfile } from '../utils/playerIntelligence';
 import { buildPlayerKey, getLeagueName, getPlayerByIdOrUniqueKey } from '../utils/dataset';
 import { buildBasicReportSections } from '../utils/playerViews';
 import { rememberRecentPlayer } from '../utils/recentPlayers';
@@ -15,7 +20,7 @@ function getMetricModeStorageKey(playerKey) {
   return `goalline-player-metric-mode:${playerKey}`;
 }
 
-export default function PlayerDetails({ header, leagueFilter, playerIdentifier, players, ratingIndex, onBack, onCompare, onOpenPlayer }) {
+export default function PlayerDetails({ header, leagueFilter, playerIdentifier, players, teams = [], ratingIndex, onBack, onCompare, onOpenPlayer, onOpenTeam }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [metricMode, setMetricMode] = useState('advanced');
 
@@ -28,6 +33,15 @@ export default function PlayerDetails({ header, leagueFilter, playerIdentifier, 
   const leagueName = player ? getLeagueName(player) : '';
   const playerKey = player ? buildPlayerKey(player) : '';
   const basicSections = useMemo(() => (player && metrics ? buildBasicReportSections(player, metrics) : []), [metrics, player]);
+  const strengthsWeaknesses = useMemo(() => (player && metrics ? buildStrengthsWeaknessesProfile(player, metrics) : null), [metrics, player]);
+  const leagueComparison = useMemo(
+    () => (player && metrics ? buildLeagueComparisonProfile(player, metrics, players.data || [], ratingIndex) : null),
+    [metrics, player, players.data, ratingIndex]
+  );
+  const transferIntelligence = useMemo(
+    () => (player && metrics ? buildTransferIntelligenceProfile(player, metrics, teams) : null),
+    [metrics, player, teams]
+  );
 
   useEffect(() => {
     if (!playerKey || typeof window === 'undefined') {
@@ -128,7 +142,7 @@ export default function PlayerDetails({ header, leagueFilter, playerIdentifier, 
           </div>
         </header>
 
-        <PlayerHeroCard leagueName={leagueName} metrics={metrics} player={player} />
+        <PlayerHeroCard leagueName={leagueName} metrics={metrics} onOpenTeam={onOpenTeam} player={player} />
 
         <section className="details-layout">
           <aside className="profile-panel">
@@ -148,7 +162,15 @@ export default function PlayerDetails({ header, leagueFilter, playerIdentifier, 
                 </div>
                 <div>
                   <dt>Club</dt>
-                  <dd>{formatTextValue(player.squad)}</dd>
+                  <dd>
+                    {onOpenTeam ? (
+                      <button className="inline-link-button" onClick={onOpenTeam} type="button">
+                        {formatTextValue(player.squad)}
+                      </button>
+                    ) : (
+                      formatTextValue(player.squad)
+                    )}
+                  </dd>
                 </div>
                 <div>
                   <dt>Age</dt>
@@ -226,6 +248,19 @@ export default function PlayerDetails({ header, leagueFilter, playerIdentifier, 
                     primaryRole={metrics.primaryTacticalRole}
                     secondaryRole={metrics.secondaryTacticalRole}
                   />
+                </section>
+
+                <section className="analysis-radar-section">
+                  <PlayerRadarPanel metrics={metrics} />
+                </section>
+
+                <section className="analysis-insights-grid">
+                  <StrengthsWeaknessesPanel profile={strengthsWeaknesses} />
+                  <LeagueComparisonPanel comparison={leagueComparison} />
+                </section>
+
+                <section className="analysis-transfer-section">
+                  <TransferIntelligencePanel profile={transferIntelligence} />
                 </section>
 
                 <div className="metric-mode-tabs">

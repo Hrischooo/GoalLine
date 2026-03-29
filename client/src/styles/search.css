@@ -192,6 +192,11 @@
   background: rgba(75, 94, 47, 0.35);
 }
 
+.search-badge--team {
+  color: #b7d8ff;
+  background: rgba(45, 67, 118, 0.35);
+}
+
 .search-dropdown__meta {
   display: flex;
   align-items: center;

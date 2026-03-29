@@ -25,6 +25,10 @@ function getMetadataFields(result) {
     return [result.team, result.position, result.nationality, result.league].map((field) => normalizeString(field)).filter(Boolean);
   }
 
+  if (result.type === 'team') {
+    return [result.league, result.country, result.manager, result.formation].map((field) => normalizeString(field)).filter(Boolean);
+  }
+
   return [result.country, result.season, result.division].map((field) => normalizeString(field)).filter(Boolean);
 }
 
@@ -106,23 +110,25 @@ function decorateResults(items, type, query, limit) {
     .slice(0, limit);
 }
 
-export function searchEntities({ query, players = [], leagues = [], limit = 6 }) {
+export function searchEntities({ query, players = [], teams = [], leagues = [], limit = 6 }) {
   const normalizedQuery = normalizeString(query);
 
   if (normalizedQuery.length < 2) {
     return {
       players: [],
+      teams: [],
       leagues: []
     };
   }
 
   return {
     players: decorateResults(players, 'player', normalizedQuery, limit),
+    teams: decorateResults(teams, 'team', normalizedQuery, limit),
     leagues: decorateResults(leagues, 'league', normalizedQuery, limit)
   };
 }
 
-export function getPopularResults({ players = [], leagues = [], playerLimit = 4, leagueLimit = 4 }) {
+export function getPopularResults({ players = [], teams = [], leagues = [], playerLimit = 4, teamLimit = 4, leagueLimit = 4 }) {
   const byPopularity = (left, right) => {
     if ((right.popularity || 0) !== (left.popularity || 0)) {
       return (right.popularity || 0) - (left.popularity || 0);
@@ -136,6 +142,10 @@ export function getPopularResults({ players = [], leagues = [], playerLimit = 4,
       .map((item) => ({ ...item, type: 'player', score: item.popularity || 0 }))
       .sort(byPopularity)
       .slice(0, playerLimit),
+    teams: [...teams]
+      .map((item) => ({ ...item, type: 'team', score: item.popularity || 0 }))
+      .sort(byPopularity)
+      .slice(0, teamLimit),
     leagues: [...leagues]
       .map((item) => ({ ...item, type: 'league', score: item.popularity || 0 }))
       .sort(byPopularity)
@@ -144,5 +154,5 @@ export function getPopularResults({ players = [], leagues = [], playerLimit = 4,
 }
 
 export function searchResultsToFlatList(groupedResults) {
-  return [...(groupedResults.players || []), ...(groupedResults.leagues || [])];
+  return [...(groupedResults.players || []), ...(groupedResults.teams || []), ...(groupedResults.leagues || [])];
 }

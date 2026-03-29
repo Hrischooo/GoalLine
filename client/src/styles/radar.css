@@ -1,0 +1,81 @@
+.player-radar {
+  display: grid;
+  gap: 16px;
+  justify-items: center;
+}
+
+.player-radar--compact {
+  gap: 12px;
+}
+
+.player-radar--empty {
+  min-height: 240px;
+  place-items: center;
+  color: var(--text-muted);
+}
+
+.player-radar__svg {
+  width: min(100%, 360px);
+  height: auto;
+  overflow: visible;
+}
+
+.player-radar--compact .player-radar__svg {
+  width: min(100%, 300px);
+}
+
+.player-radar__ring {
+  fill: rgba(255, 255, 255, 0.018);
+  stroke: rgba(255, 255, 255, 0.08);
+  stroke-width: 1;
+}
+
+.player-radar__axis {
+  stroke: rgba(255, 255, 255, 0.11);
+  stroke-width: 1;
+}
+
+.player-radar__shape {
+  stroke-width: 2.4;
+}
+
+.player-radar__point {
+  stroke: rgba(4, 7, 17, 0.95);
+  stroke-width: 1.5;
+}
+
+.player-radar__label {
+  fill: rgba(226, 236, 255, 0.8);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.player-radar__legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.player-radar__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.player-radar__legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+@media (max-width: 760px) {
+  .player-radar__label {
+    font-size: 10px;
+  }
+}

@@ -8,7 +8,8 @@ function formatConfidence(value) {
 const TACTICAL_ROWS = [
   ['Primary Role', 'primaryTacticalRoleLabel'],
   ['Secondary Role', 'secondaryTacticalRoleLabel'],
-  ['Confidence', 'tacticalRoleConfidence']
+  ['Confidence', 'tacticalRoleConfidence'],
+  ['Reliability', 'reliabilityLabel']
 ];
 
 export default function TacticalProfileMiniBlock({ metrics }) {

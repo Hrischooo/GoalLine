@@ -3,7 +3,9 @@ import LeagueFiltersBar from '../components/LeagueFiltersBar';
 import LeagueLeaderboardSection from '../components/LeagueLeaderboardSection';
 import LeaguePlayerExplorer from '../components/LeaguePlayerExplorer';
 import LeagueSummaryHeader from '../components/LeagueSummaryHeader';
+import LeagueTeamsSection from '../components/LeagueTeamsSection';
 import '../styles/league-details.css';
+import '../styles/team.css';
 import { computeDisplayMetrics, toNumber } from '../utils/playerMetrics';
 import { buildPlayerKey, getLeagueById, getLeaguePlayers } from '../utils/dataset';
 import { normalizeString } from '../utils/search';
@@ -218,7 +220,7 @@ function buildLeaderboardBoard(id, title, statLabel, players, sortKey) {
   };
 }
 
-export default function LeagueDetails({ header, leagueId, leagues, onNavigate, players, ratingIndex }) {
+export default function LeagueDetails({ header, leagueId, leagues, onNavigate, players, ratingIndex, teams = [] }) {
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_PLAYERS);
   const league = getLeagueById(leagues, leagueId);
@@ -244,6 +246,7 @@ export default function LeagueDetails({ header, leagueId, leagues, onNavigate, p
       }),
     [leagueId, players.data, ratingIndex]
   );
+  const leagueTeams = useMemo(() => teams.filter((team) => team.leagueId === leagueId), [leagueId, teams]);
 
   useEffect(() => {
     setFilters(INITIAL_FILTERS);
@@ -411,6 +414,8 @@ export default function LeagueDetails({ header, leagueId, leagues, onNavigate, p
         {header}
 
         <LeagueSummaryHeader league={league} onBack={() => onNavigate('/leagues')} onCompare={() => onNavigate('/compare')} />
+
+        <LeagueTeamsSection onOpenTeam={(teamKey) => onNavigate(`/teams/${encodeURIComponent(teamKey)}`)} teams={leagueTeams} />
 
         <LeagueLeaderboardSection boards={leaderboardBoards} onOpenPlayer={(playerKey) => onNavigate(`/player/${encodeURIComponent(playerKey)}`)} />
 

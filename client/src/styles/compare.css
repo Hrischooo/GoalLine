@@ -453,6 +453,58 @@
   gap: 16px;
 }
 
+.compare-radar {
+  display: grid;
+  gap: 18px;
+}
+
+.compare-radar--overlay {
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+  align-items: center;
+}
+
+.compare-radar--split {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.compare-radar__chart {
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.compare-radar__meta {
+  display: grid;
+  gap: 12px;
+}
+
+.compare-radar__pill {
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.compare-radar__pill span,
+.compare-radar-card p {
+  color: var(--text-muted);
+}
+
+.compare-radar__pill strong {
+  display: block;
+  margin-top: 8px;
+}
+
+.compare-radar-card {
+  display: grid;
+  gap: 12px;
+}
+
+.compare-radar-card .comparison-card__header {
+  margin-bottom: 0;
+}
+
 .compare-role-fit__column-header {
   margin-bottom: 14px;
 }
@@ -691,7 +743,9 @@
 @media (max-width: 1120px) {
   .compare-selector-grid,
   .compare-hero-card,
-  .compare-role-fit {
+  .compare-role-fit,
+  .compare-radar--overlay,
+  .compare-radar--split {
     grid-template-columns: 1fr;
   }
 
