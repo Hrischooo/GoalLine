@@ -2,9 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import ClubBadge from '../components/ClubBadge';
 import OvrInlineValue from '../components/OvrInlineValue';
 import PlayerAvatar from '../components/PlayerAvatar';
+import TacticalModeSelector from '../components/TacticalModeSelector';
 import TeamBestXISection from '../components/TeamBestXISection';
 import TeamDepthChart from '../components/TeamDepthChart';
+import TeamFormationBoard from '../components/TeamFormationBoard';
 import TeamFormStrip from '../components/TeamFormStrip';
+import RecruitmentIntelligencePanel from '../components/RecruitmentIntelligencePanel';
 import TeamRatingPanel from '../components/TeamRatingPanel';
 import TeamStrengthsWeaknesses from '../components/TeamStrengthsWeaknesses';
 import '../styles/team.css';
@@ -83,42 +86,6 @@ function getKeyStat(player) {
   };
 }
 
-function FormationBoard({ formation, xi = [] }) {
-  const rows = String(formation || '')
-    .split('-')
-    .map((value) => Number(value))
-    .filter((value) => Number.isFinite(value) && value > 0);
-  const lines = [
-    xi.filter((slot) => slot.line === 'attack'),
-    xi.filter((slot) => slot.line === 'midfield'),
-    xi.filter((slot) => slot.line === 'defense'),
-    xi.filter((slot) => slot.line === 'goalkeeper')
-  ].filter((line) => line.length);
-
-  if (!rows.length) {
-    return (
-      <div className="formation-board formation-board--empty" aria-label="No formation profile available">
-        <span>No formation profile yet</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="formation-board" aria-label={`${formation} formation board`}>
-      {lines.map((line, rowIndex) => (
-        <div className="formation-board__row" key={`${formation}-${rowIndex}`}>
-          {line.map((slot) => (
-            <div className="formation-board__node-wrap" key={slot.slotId}>
-              <span className="formation-board__node" />
-              <small>{slot.slotLabel}</small>
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function TeamStatTile({ label, value }) {
   return (
     <div className="team-stat-tile">
@@ -154,6 +121,7 @@ function MiniPlayerList({ label, players = [], onNavigate }) {
 export default function TeamDetails({ header, players, ratingIndex, teamIdentifier, teams, onNavigate }) {
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const team = useMemo(() => getTeamByIdOrName(teams.data || [], teamIdentifier), [teamIdentifier, teams.data]);
+  const [activeMode, setActiveMode] = useState('preferred');
 
   const squadPlayers = useMemo(
     () =>
@@ -185,10 +153,41 @@ export default function TeamDetails({ header, players, ratingIndex, teamIdentifi
   );
 
   const sortedPlayers = useMemo(() => sortPlayers(filteredPlayers, filters.sortKey), [filteredPlayers, filters.sortKey]);
+  const lineupModes = team?.lineupModes || {};
+  const preferredLineup = lineupModes.preferred || team?.preferredBestXI || team?.bestXI || null;
+  const autoLineup = lineupModes.auto || team?.bestXI || null;
+  const availableModes = useMemo(
+    () =>
+      [
+        preferredLineup
+          ? {
+              id: 'preferred',
+              label: 'Preferred Tactical Shape',
+              shortLabel: 'Preferred',
+              meta: preferredLineup.formation
+            }
+          : null,
+        autoLineup
+          ? {
+              id: 'auto',
+              label: 'Auto Best Shape',
+              shortLabel: 'Auto Best',
+              meta: autoLineup.formation
+            }
+          : null
+      ].filter(Boolean),
+    [preferredLineup, autoLineup]
+  );
+  const resolvedMode = useMemo(
+    () => (availableModes.some((mode) => mode.id === activeMode) ? activeMode : availableModes[0]?.id || 'auto'),
+    [activeMode, availableModes]
+  );
+  const activeLineup = resolvedMode === 'preferred' ? preferredLineup : autoLineup;
 
   useEffect(() => {
     setFilters(INITIAL_FILTERS);
-  }, [teamIdentifier]);
+    setActiveMode(preferredLineup ? 'preferred' : 'auto');
+  }, [teamIdentifier, preferredLineup]);
 
   if ((teams.loading || players.loading) && !team) {
     return (
@@ -242,8 +241,8 @@ export default function TeamDetails({ header, players, ratingIndex, teamIdentifi
             <div className="team-hero__badges">
               <TeamStatTile label="Manager" value={formatTextValue(team.manager, 'Unknown')} />
               <TeamStatTile label="Preferred" value={formatTextValue(team.preferred_formation, 'N/A')} />
-              <TeamStatTile label="Detected" value={formatTextValue(team.detectedFormation || team.preferred_formation, 'N/A')} />
-              <TeamStatTile label="Team Rating" value={formatStatValue(team.teamRating || team.avgRating, '-')} />
+              <TeamStatTile label="Auto Best" value={formatTextValue(autoLineup?.formation || team.detectedFormation || team.preferred_formation, 'N/A')} />
+              <TeamStatTile label="Team Rating" value={formatStatValue(activeLineup?.overallTeamRating || team.teamRating || team.avgRating, '-')} />
               <TeamStatTile label="Squad Size" value={team.squadSize} />
               <TeamStatTile label="Average Age" value={team.avgAge || '-'} />
             </div>
@@ -267,31 +266,70 @@ export default function TeamDetails({ header, players, ratingIndex, teamIdentifi
 
         <section className="team-layout">
           <section className="team-block">
-            <div className="team-block__header">
+            <div className="team-block__header team-block__header--stacked">
               <div>
                 <p className="home-kicker">Team Identity</p>
                 <h2>Tactical Identity</h2>
               </div>
+              <TacticalModeSelector activeMode={resolvedMode} modes={availableModes} onChange={setActiveMode} />
             </div>
 
             <div className="team-identity-grid">
               <div className="team-identity-copy">
-                <h3>Style Summary</h3>
-                <p>{formatTextValue(team.tacticalIdentitySummary || team.play_style, 'N/A')}</p>
+                <h3>Shape Intelligence</h3>
+                <p>{formatTextValue(activeLineup?.explanationSummary || team.tacticalIdentitySummary || team.play_style, 'N/A')}</p>
+
                 <div className="team-identity-copy__meta">
-                  <span>{team.displayName}</span>
+                  <span>{activeLineup?.modeLabel || 'Active mode'}</span>
                   <strong>
-                    Preferred {formatTextValue(team.preferred_formation, 'N/A')} / Detected {formatTextValue(team.detectedFormation, 'N/A')}
+                    Preferred {formatTextValue(team.preferred_formation, 'N/A')} / Auto {formatTextValue(autoLineup?.formation || team.detectedFormation, 'N/A')}
                   </strong>
+                </div>
+
+                <div className="team-identity-mode-grid">
+                  <article className={`team-identity-mode-card${resolvedMode === 'preferred' ? ' team-identity-mode-card--active' : ''}`}>
+                    <span>Preferred Shape</span>
+                    <strong>{formatTextValue(preferredLineup?.formation || team.preferred_formation, 'N/A')}</strong>
+                    <p>{formatTextValue(preferredLineup?.explanationSummary, 'Strongest XI inside the intended team structure.')}</p>
+                  </article>
+                  <article className={`team-identity-mode-card${resolvedMode === 'auto' ? ' team-identity-mode-card--active' : ''}`}>
+                    <span>Auto Best Shape</span>
+                    <strong>{formatTextValue(autoLineup?.formation || team.detectedFormation, 'N/A')}</strong>
+                    <p>{formatTextValue(autoLineup?.explanationSummary, 'Best current tactical fit from the available squad.')}</p>
+                  </article>
                 </div>
               </div>
 
               <div className="team-identity-visual">
                 <div className="team-identity-visual__header">
-                  <span>Detected Shape</span>
-                  <strong>{formatTextValue(team.detectedFormation || team.preferred_formation, 'N/A')}</strong>
+                  <div>
+                    <span>{activeLineup?.modeLabel || 'Active Shape'}</span>
+                    <strong>{formatTextValue(activeLineup?.formation || team.detectedFormation || team.preferred_formation, 'N/A')}</strong>
+                  </div>
+                  <small>{Math.round((activeLineup?.formationConfidence || team.formationConfidence || 0) * 100)}% confidence</small>
                 </div>
-                <FormationBoard formation={team.detectedFormation || team.preferred_formation} xi={team.bestXI?.xi || []} />
+
+                <div className="team-identity-visual__meta">
+                  <div className="team-identity-visual__metric">
+                    <span>Formation Score</span>
+                    <strong>{formatStatValue(activeLineup?.totalFormationScore || activeLineup?.formationFitScore, '-')}</strong>
+                  </div>
+                  <div className="team-identity-visual__metric">
+                    <span>Role Coherence</span>
+                    <strong>{formatStatValue(activeLineup?.roleCoherenceScore, '-')}</strong>
+                  </div>
+                  <div className="team-identity-visual__metric">
+                    <span>Position Coverage</span>
+                    <strong>{formatStatValue(activeLineup?.positionCoverageScore, '-')}</strong>
+                  </div>
+                </div>
+
+                <TeamFormationBoard
+                  formation={activeLineup?.formation || team.detectedFormation || team.preferred_formation}
+                  onOpenPlayer={(playerKey) => onNavigate(`/player/${encodeURIComponent(playerKey)}`)}
+                  variant="mini"
+                  xi={activeLineup?.xi || team.bestXI?.xi || []}
+                />
               </div>
             </div>
           </section>
@@ -309,14 +347,20 @@ export default function TeamDetails({ header, players, ratingIndex, teamIdentifi
               <TeamStatTile label="Total Assists" value={formatStatValue(team.totalAssists || team.avgAssists, '0')} />
               <TeamStatTile label="Strongest Line" value={formatTextValue(team.strongestLine, '-')} />
               <TeamStatTile label="Weakest Line" value={formatTextValue(team.weakestLine, '-')} />
-              <TeamStatTile label="Formation Confidence" value={`${Math.round((team.formationConfidence || 0) * 100)}%`} />
+              <TeamStatTile label="Formation Confidence" value={`${Math.round((activeLineup?.formationConfidence || team.formationConfidence || 0) * 100)}%`} />
               <TeamStatTile label="Squad Avg OVR" value={formatStatValue(team.squadAverageRating || team.avgRating, '0')} />
             </div>
           </section>
         </section>
 
-        <TeamRatingPanel bestXI={team.bestXI} tacticalIdentitySummary={team.tacticalIdentitySummary} team={team} />
-        <TeamBestXISection bestXI={team.bestXI} onOpenPlayer={(playerKey) => onNavigate(`/player/${encodeURIComponent(playerKey)}`)} />
+        <TeamRatingPanel bestXI={activeLineup} tacticalIdentitySummary={team.tacticalIdentitySummary} team={team} />
+        <TeamBestXISection
+          activeLineup={activeLineup}
+          activeMode={resolvedMode}
+          modeOptions={availableModes}
+          onModeChange={setActiveMode}
+          onOpenPlayer={(playerKey) => onNavigate(`/player/${encodeURIComponent(playerKey)}`)}
+        />
 
         <section className="team-layout">
           <TeamDepthChart depthChart={team.positionDepth || []} />
@@ -336,6 +380,13 @@ export default function TeamDetails({ header, players, ratingIndex, teamIdentifi
         </section>
 
         <TeamStrengthsWeaknesses team={team} />
+
+        <RecruitmentIntelligencePanel
+          onOpenPlayer={(playerKey) => onNavigate(`/player/${encodeURIComponent(playerKey)}`)}
+          players={players.data || []}
+          ratingIndex={ratingIndex}
+          team={team}
+        />
 
         <section className="team-block">
           <div className="team-block__header team-block__header--stacked">

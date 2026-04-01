@@ -1,108 +1,56 @@
-import { getLeagueFilterValue, getLeagueName, LEAGUE_FILTERS } from './dataset';
+import { buildPlayerKey, getLeagueFilterValue, getLeagueName, LEAGUE_FILTERS } from './dataset';
 import { getReadableTacticalRoleLabel, toNumber } from './playerMetrics';
 import { getPlayerRadarProfile } from './playerRadar';
+import { normalizeString } from './search';
+import { clamp, getPriorityMetricEntries } from './scoutingInsightHelpers';
 
 export const SIMILARITY_MODES = {
   similarStyle: { id: 'similarStyle', label: 'Similar Style', tag: 'Style Match' },
   sameRole: { id: 'sameRole', label: 'Same Role', tag: 'Role Match' },
-  higherLevel: { id: 'higherLevel', label: 'Higher-Level Version', tag: 'Upgrade' },
   youngerAlternative: { id: 'youngerAlternative', label: 'Younger Alternative', tag: 'Younger' },
-  budgetAlternative: { id: 'budgetAlternative', label: 'Budget Alternative', tag: 'Budget' },
-  sameLevel: { id: 'sameLevel', label: 'Same-Level Option', tag: 'Same Level' }
+  sameLevel: { id: 'sameLevel', label: 'Same-Level Alternative', tag: 'Same Level' },
+  higherLevel: { id: 'higherLevel', label: 'Higher-Level Version', tag: 'Upgrade' }
 };
+
+export const PRIMARY_VISIBLE_SIMILARITY_MODES = [
+  SIMILARITY_MODES.similarStyle.id,
+  SIMILARITY_MODES.sameRole.id,
+  SIMILARITY_MODES.youngerAlternative.id
+];
 
 const MODE_ORDER = [
   SIMILARITY_MODES.similarStyle.id,
-  SIMILARITY_MODES.higherLevel.id,
+  SIMILARITY_MODES.sameRole.id,
   SIMILARITY_MODES.youngerAlternative.id,
-  SIMILARITY_MODES.sameLevel.id
+  SIMILARITY_MODES.sameLevel.id,
+  SIMILARITY_MODES.higherLevel.id
 ];
 
-const MINIMUM_MINUTES = 500;
-const MINIMUM_RELIABILITY = 0.68;
+const MINIMUM_MINUTES = 450;
+const MINIMUM_RELIABILITY = 0.64;
 const DEBUG_SAMPLE_PLAYERS = new Set(['Son Heung-min', 'Rodri', 'Bruno Guimaraes', 'Gabriel Jesus', 'Ollie Watkins', 'Mohamed Salah']);
 
-const POSITION_DIMENSIONS = {
-  GK: [
-    ['shot_stopping', 'shot stopping', 1.2],
-    ['command', 'command', 1],
-    ['distribution', 'distribution', 0.85],
-    ['handling_security', 'handling security', 0.8],
-    ['reliability', 'reliability', 0.65]
-  ],
-  CB: [
-    ['defending', 'defending', 1.2],
-    ['positioning', 'positioning', 1.05],
-    ['aerial', 'aerial presence', 1],
-    ['physical_dueling', 'duel profile', 0.95],
-    ['ball_security', 'ball security', 0.7],
-    ['progression', 'progression', 0.7]
-  ],
-  'LB/RB': [
-    ['defending', 'defending', 0.95],
-    ['progression', 'progression', 1],
-    ['delivery', 'delivery', 0.9],
-    ['carrying', 'carrying', 0.95],
-    ['support_play', 'support play', 0.85],
-    ['ball_security', 'ball security', 0.65]
-  ],
-  DM: [
-    ['ball_winning', 'ball-winning', 1.05],
-    ['positioning', 'positioning', 1],
-    ['possession_control', 'possession control', 1.05],
-    ['security', 'security', 0.95],
-    ['progression', 'progression', 0.85],
-    ['passing_range', 'passing range', 0.75]
-  ],
-  CM: [
-    ['progression', 'progression', 1],
-    ['creativity', 'creativity', 0.85],
-    ['possession', 'possession', 1],
-    ['control', 'control', 0.95],
-    ['work_rate', 'work rate', 0.75],
-    ['ball_security', 'ball security', 0.75]
-  ],
-  CAM: [
-    ['creativity', 'chance creation', 1.15],
-    ['attack', 'attack threat', 0.95],
-    ['final_third_delivery', 'final-third delivery', 1],
-    ['progression', 'progression', 0.8],
-    ['flair_carrying', 'carrying flair', 0.9],
-    ['possession', 'possession', 0.65]
-  ],
-  'LW/RW': [
-    ['attack', 'attack threat', 1.05],
-    ['creativity', 'chance creation', 0.85],
-    ['dribbling', 'dribbling', 1],
-    ['carry_threat', 'carry threat', 1],
-    ['delivery', 'final-third delivery', 0.85],
-    ['retention', 'ball retention', 0.65]
-  ],
-  ST: [
-    ['finishing', 'finishing', 1.1],
-    ['shot_threat', 'shot threat', 1.05],
-    ['box_presence', 'box presence', 1],
-    ['attack', 'attack output', 1],
-    ['link_play', 'link play', 0.75],
-    ['aerial_threat', 'aerial threat', 0.65]
-  ]
+const FLEXIBLE_EXACT_POSITION_MATCHES = {
+  ST: new Set(['CF']),
+  CF: new Set(['ST']),
+  LW: new Set(['RW']),
+  RW: new Set(['LW']),
+  LB: new Set(['RB', 'LWB']),
+  RB: new Set(['LB', 'RWB']),
+  LWB: new Set(['LB']),
+  RWB: new Set(['RB'])
 };
 
 const MODE_WEIGHTS = {
-  [SIMILARITY_MODES.similarStyle.id]: { radar: 0.3, category: 0.22, role: 0.28, archetype: 0.1, level: 0.04, age: 0.02, reliability: 0.04 },
-  [SIMILARITY_MODES.sameRole.id]: { radar: 0.18, category: 0.22, role: 0.4, archetype: 0.12, level: 0.04, age: 0.02, reliability: 0.02 },
-  [SIMILARITY_MODES.higherLevel.id]: { radar: 0.26, category: 0.18, role: 0.24, archetype: 0.1, level: 0.18, age: 0.01, reliability: 0.03 },
-  [SIMILARITY_MODES.youngerAlternative.id]: { radar: 0.22, category: 0.2, role: 0.24, archetype: 0.1, level: 0.08, age: 0.12, reliability: 0.04 },
-  [SIMILARITY_MODES.budgetAlternative.id]: { radar: 0.22, category: 0.18, role: 0.24, archetype: 0.1, level: 0.18, age: 0.03, reliability: 0.05 },
-  [SIMILARITY_MODES.sameLevel.id]: { radar: 0.24, category: 0.22, role: 0.24, archetype: 0.1, level: 0.14, age: 0.03, reliability: 0.03 }
+  [SIMILARITY_MODES.similarStyle.id]: { position: 0.12, radar: 0.23, categories: 0.15, metrics: 0.18, role: 0.14, archetype: 0.06, level: 0.04, age: 0.02, reliability: 0.06 },
+  [SIMILARITY_MODES.sameRole.id]: { position: 0.14, radar: 0.18, categories: 0.14, metrics: 0.16, role: 0.24, archetype: 0.08, level: 0.03, age: 0.01, reliability: 0.02 },
+  [SIMILARITY_MODES.youngerAlternative.id]: { position: 0.14, radar: 0.2, categories: 0.14, metrics: 0.16, role: 0.16, archetype: 0.05, level: 0.06, age: 0.07, reliability: 0.02 },
+  [SIMILARITY_MODES.sameLevel.id]: { position: 0.12, radar: 0.21, categories: 0.15, metrics: 0.16, role: 0.15, archetype: 0.05, level: 0.1, age: 0.02, reliability: 0.04 },
+  [SIMILARITY_MODES.higherLevel.id]: { position: 0.12, radar: 0.2, categories: 0.14, metrics: 0.16, role: 0.15, archetype: 0.05, level: 0.13, age: 0.01, reliability: 0.04 }
 };
 
-function clamp(value, min, max) {
-  return Math.min(Math.max(value, min), max);
-}
-
-function getPlayerKey(player) {
-  return String(player?.player || '').trim().toLowerCase();
+function getRatingLookupKey(player) {
+  return normalizeString([player?.player, player?.squad, player?.league || player?.comp, player?.season].filter(Boolean).join(' '));
 }
 
 function getPlayerAge(player) {
@@ -126,126 +74,111 @@ function normalizeFilters(filters = {}) {
   };
 }
 
-function buildRadarLookup(rating = {}) {
-  return Object.fromEntries(getPlayerRadarProfile(rating).radarAxes.map((axis) => [axis.key, axis.value]));
-}
+function normalizeVector(vector = []) {
+  const magnitude = Math.sqrt(vector.reduce((sum, value) => sum + value * value, 0));
 
-function buildCategoryLookup(rating = {}) {
-  return {
-    attack: toNumber(rating.attackScore),
-    creativity: toNumber(rating.creativityScore),
-    possession: toNumber(rating.possessionScore),
-    defending: toNumber(rating.defendingScore)
-  };
-}
-
-function getPositionDimensions(rating = {}) {
-  return POSITION_DIMENSIONS[rating.positionModel] || POSITION_DIMENSIONS.CM;
-}
-
-function getAverageSimilarity(leftLookup = {}, rightLookup = {}, keys = [], weights = {}) {
-  let weightedDiff = 0;
-  let totalWeight = 0;
-
-  for (const key of keys) {
-    const weight = weights[key] || 1;
-    const diff = Math.abs(toNumber(leftLookup[key]) - toNumber(rightLookup[key]));
-    weightedDiff += diff * weight;
-    totalWeight += weight;
+  if (!magnitude) {
+    return vector.map(() => 0);
   }
 
-  return totalWeight ? clamp(100 - weightedDiff / totalWeight, 0, 100) : 50;
+  return vector.map((value) => value / magnitude);
 }
 
-function buildRadarComparisons(currentRating, candidateRating) {
-  const currentRadar = buildRadarLookup(currentRating);
-  const candidateRadar = buildRadarLookup(candidateRating);
-  const comparisons = getPositionDimensions(currentRating).map(([key, label, weight]) => {
-    const currentValue = toNumber(currentRadar[key]);
-    const candidateValue = toNumber(candidateRadar[key]);
-    const difference = Math.abs(currentValue - candidateValue);
+function cosineSimilarity(leftVector = [], rightVector = []) {
+  if (!leftVector.length || leftVector.length !== rightVector.length) {
+    return 0.5;
+  }
 
-    return {
-      key,
-      label,
-      weight,
-      currentValue,
-      candidateValue,
-      difference,
-      closeness: clamp(100 - difference, 0, 100)
-    };
-  });
-
-  const weightedDifference = comparisons.reduce((sum, item) => sum + item.difference * item.weight, 0);
-  const totalWeight = comparisons.reduce((sum, item) => sum + item.weight, 0);
-
-  return {
-    comparisons,
-    similarity: totalWeight ? clamp(100 - weightedDifference / totalWeight, 0, 100) : 50
-  };
+  const normalizedLeft = normalizeVector(leftVector);
+  const normalizedRight = normalizeVector(rightVector);
+  const dotProduct = normalizedLeft.reduce((sum, value, index) => sum + value * normalizedRight[index], 0);
+  return clamp((dotProduct + 1) / 2, 0, 1);
 }
 
-function buildCategorySimilarity(currentRating, candidateRating) {
-  const currentCategories = buildCategoryLookup(currentRating);
-  const candidateCategories = buildCategoryLookup(candidateRating);
-  const keys = Object.keys(currentCategories);
-
-  return {
-    similarity: getAverageSimilarity(currentCategories, candidateCategories, keys),
-    overlap: [...keys]
-      .map((key) => ({ key, delta: Math.abs(currentCategories[key] - candidateCategories[key]) }))
-      .sort((left, right) => left.delta - right.delta)
-      .slice(0, 2)
-      .map((entry) => entry.key)
-  };
+function buildRadarVector(rating = {}) {
+  const radarProfile = getPlayerRadarProfile(rating);
+  return radarProfile.radarAxes.map((axis) => ({
+    key: axis.key,
+    label: axis.label,
+    value: toNumber(axis.value) / 100
+  }));
 }
 
-function buildRoleSimilarity(currentRating, candidateRating) {
-  const roleKeys = [...new Set([...Object.keys(currentRating?.tacticalRoleScores || {}), ...Object.keys(candidateRating?.tacticalRoleScores || {})])];
-  const roleVectorSimilarity = roleKeys.length
-    ? clamp(
-        100 -
-          roleKeys.reduce((sum, roleKey) => sum + Math.abs(toNumber(currentRating?.tacticalRoleScores?.[roleKey]) - toNumber(candidateRating?.tacticalRoleScores?.[roleKey])), 0) /
-            roleKeys.length,
-        0,
-        100
-      )
-    : 55;
-  const primaryRoleMatch =
-    !currentRating?.primaryTacticalRole || !candidateRating?.primaryTacticalRole
-      ? 55
-      : currentRating.primaryTacticalRole === candidateRating.primaryTacticalRole
-        ? 100
-        : currentRating.primaryTacticalRole === candidateRating.secondaryTacticalRole || currentRating.secondaryTacticalRole === candidateRating.primaryTacticalRole
-          ? 80
-          : 32;
-  const archetypeMatch =
-    !currentRating?.playerArchetype || !candidateRating?.playerArchetype
-      ? 55
-      : currentRating.playerArchetype === candidateRating.playerArchetype
-        ? 100
-        : currentRating.secondaryArchetype === candidateRating.playerArchetype || candidateRating.secondaryArchetype === currentRating.playerArchetype
-          ? 82
-          : 38;
-
-  return {
-    roleVectorSimilarity,
-    primaryRoleMatch,
-    archetypeMatch,
-    similarity: 0.5 * roleVectorSimilarity + 0.32 * primaryRoleMatch + 0.18 * archetypeMatch
-  };
+function buildCategoryVector(rating = {}) {
+  return [
+    { key: 'attack', label: 'Attack', value: toNumber(rating.attackScore) / 100 },
+    { key: 'creativity', label: 'Creativity', value: toNumber(rating.creativityScore) / 100 },
+    { key: 'possession', label: 'Possession', value: toNumber(rating.possessionScore) / 100 },
+    { key: 'defending', label: 'Defending', value: toNumber(rating.defendingScore) / 100 }
+  ];
 }
 
-function getPositionMatch(currentRating, candidateRating) {
+function buildRoleVector(currentRating = {}, candidateRating = {}) {
+  const roleKeys = [...new Set([...Object.keys(currentRating.tacticalRoleScores || {}), ...Object.keys(candidateRating.tacticalRoleScores || {})])];
+
+  if (!roleKeys.length) {
+    return [];
+  }
+
+  return roleKeys.map((roleKey) => ({
+    key: roleKey,
+    label: getReadableTacticalRoleLabel(roleKey),
+    currentValue: toNumber(currentRating.tacticalRoleScores?.[roleKey]) / 100,
+    candidateValue: toNumber(candidateRating.tacticalRoleScores?.[roleKey]) / 100
+  }));
+}
+
+function buildMetricVector(rating = {}) {
+  return getPriorityMetricEntries(rating, 5).map((entry) => ({
+    key: entry.key,
+    label: entry.label,
+    value: toNumber(entry.normalizedScore)
+  }));
+}
+
+function getExactPositionScore(currentRating, candidateRating) {
   if (currentRating.exactPosition === candidateRating.exactPosition) {
-    return 100;
+    return 1;
   }
 
-  if (currentRating.positionModel === candidateRating.positionModel) {
-    return 88;
+  if (FLEXIBLE_EXACT_POSITION_MATCHES[currentRating.exactPosition]?.has(candidateRating.exactPosition)) {
+    return 0.86;
   }
 
-  return 45;
+  return currentRating.positionModel === candidateRating.positionModel ? 0.48 : 0.12;
+}
+
+function getRoleSimilarity(currentRating, candidateRating) {
+  const roleVector = buildRoleVector(currentRating, candidateRating);
+
+  if (!roleVector.length) {
+    return 0.55;
+  }
+
+  return cosineSimilarity(
+    roleVector.map((entry) => entry.currentValue),
+    roleVector.map((entry) => entry.candidateValue)
+  );
+}
+
+function getArchetypeSimilarity(currentRating, candidateRating) {
+  if (!currentRating.playerArchetype || !candidateRating.playerArchetype) {
+    return 0.5;
+  }
+
+  if (currentRating.playerArchetype === candidateRating.playerArchetype) {
+    return 1;
+  }
+
+  if (currentRating.secondaryArchetype === candidateRating.playerArchetype || candidateRating.secondaryArchetype === currentRating.playerArchetype) {
+    return 0.8;
+  }
+
+  return 0.38;
+}
+
+function getAgeSimilarity(currentPlayer, candidatePlayer) {
+  return clamp(1 - Math.abs(getPlayerAge(currentPlayer) - getPlayerAge(candidatePlayer)) / 12, 0, 1);
 }
 
 function getLevelDelta(currentRating, candidateRating) {
@@ -253,168 +186,303 @@ function getLevelDelta(currentRating, candidateRating) {
 }
 
 function getLevelSimilarity(currentRating, candidateRating) {
-  return clamp(100 - Math.abs(getLevelDelta(currentRating, candidateRating)) * 8, 0, 100);
-}
-
-function getAgeSimilarity(currentPlayer, candidatePlayer) {
-  return clamp(100 - Math.abs(getPlayerAge(currentPlayer) - getPlayerAge(candidatePlayer)) * 10, 0, 100);
+  return clamp(1 - Math.abs(getLevelDelta(currentRating, candidateRating)) / 10, 0, 1);
 }
 
 function getReliabilitySimilarity(currentPlayer, candidatePlayer, currentRating, candidateRating) {
   const currentMinutes = getEstimatedMinutes(currentPlayer, currentRating);
   const candidateMinutes = getEstimatedMinutes(candidatePlayer, candidateRating);
-  return clamp(100 - Math.abs(currentMinutes - candidateMinutes) / 45, 0, 100);
+  return clamp(1 - Math.abs(currentMinutes - candidateMinutes) / 2400, 0, 1);
+}
+
+function getVectorSimilarity(leftEntries = [], rightEntries = []) {
+  if (!leftEntries.length || !rightEntries.length) {
+    return 0.5;
+  }
+
+  const keys = [...new Set([...leftEntries.map((entry) => entry.key), ...rightEntries.map((entry) => entry.key)])];
+  const leftLookup = Object.fromEntries(leftEntries.map((entry) => [entry.key, entry.value]));
+  const rightLookup = Object.fromEntries(rightEntries.map((entry) => [entry.key, entry.value]));
+  return cosineSimilarity(
+    keys.map((key) => toNumber(leftLookup[key])),
+    keys.map((key) => toNumber(rightLookup[key]))
+  );
+}
+
+function buildRadarComparisons(currentRating, candidateRating) {
+  const currentRadar = buildRadarVector(currentRating);
+  const candidateRadar = buildRadarVector(candidateRating);
+  const candidateLookup = Object.fromEntries(candidateRadar.map((entry) => [entry.key, entry]));
+  const comparisons = currentRadar.map((entry) => {
+    const candidateEntry = candidateLookup[entry.key];
+    const currentValue = toNumber(entry.value) * 100;
+    const candidateValue = toNumber(candidateEntry?.value) * 100;
+
+    return {
+      key: entry.key,
+      label: entry.label,
+      currentValue,
+      candidateValue,
+      difference: Math.abs(currentValue - candidateValue),
+      closeness: clamp(100 - Math.abs(currentValue - candidateValue), 0, 100)
+    };
+  });
+
+  return {
+    similarity: getVectorSimilarity(currentRadar, candidateRadar),
+    comparisons
+  };
+}
+
+function buildMetricComparisons(currentRating, candidateRating) {
+  const currentMetrics = buildMetricVector(currentRating);
+  const candidateMetrics = buildMetricVector(candidateRating);
+  const keys = [...new Set([...currentMetrics.map((entry) => entry.key), ...candidateMetrics.map((entry) => entry.key)])];
+  const currentLookup = Object.fromEntries(currentMetrics.map((entry) => [entry.key, entry]));
+  const candidateLookup = Object.fromEntries(candidateMetrics.map((entry) => [entry.key, entry]));
+  const comparisons = keys.map((key) => {
+    const currentEntry = currentLookup[key];
+    const candidateEntry = candidateLookup[key];
+    const currentValue = toNumber(currentEntry?.value) * 100;
+    const candidateValue = toNumber(candidateEntry?.value) * 100;
+
+    return {
+      key,
+      label: currentEntry?.label || candidateEntry?.label || key,
+      currentValue,
+      candidateValue,
+      difference: Math.abs(currentValue - candidateValue),
+      closeness: clamp(100 - Math.abs(currentValue - candidateValue), 0, 100)
+    };
+  });
+
+  return {
+    similarity: getVectorSimilarity(
+      keys.map((key) => ({ key, value: toNumber(currentLookup[key]?.value) })),
+      keys.map((key) => ({ key, value: toNumber(candidateLookup[key]?.value) }))
+    ),
+    comparisons
+  };
+}
+
+function buildCategoryComparisons(currentRating, candidateRating) {
+  const currentCategories = buildCategoryVector(currentRating);
+  const candidateCategories = buildCategoryVector(candidateRating);
+
+  return {
+    similarity: getVectorSimilarity(currentCategories, candidateCategories),
+    overlap: currentCategories
+      .map((entry) => ({
+        key: entry.key,
+        label: entry.label,
+        difference: Math.abs(toNumber(entry.value) - toNumber(candidateCategories.find((candidateEntry) => candidateEntry.key === entry.key)?.value)) * 100
+      }))
+      .sort((left, right) => left.difference - right.difference)
+      .slice(0, 2)
+  };
 }
 
 function passesModeRequirements(mode, currentPlayer, candidatePlayer, currentRating, candidateRating) {
   const levelDelta = getLevelDelta(currentRating, candidateRating);
-  const currentAge = getPlayerAge(currentPlayer);
-  const candidateAge = getPlayerAge(candidatePlayer);
+  const ageGap = getPlayerAge(currentPlayer) - getPlayerAge(candidatePlayer);
 
   switch (mode) {
     case SIMILARITY_MODES.higherLevel.id:
-      return levelDelta >= 3;
+      return levelDelta >= 2;
     case SIMILARITY_MODES.youngerAlternative.id:
-      return candidateAge > 0 && currentAge > 0 && candidateAge < currentAge;
-    case SIMILARITY_MODES.budgetAlternative.id:
-      return levelDelta <= -3;
+      return ageGap >= 1 && levelDelta >= -7;
     case SIMILARITY_MODES.sameLevel.id:
-      return Math.abs(levelDelta) <= 5;
+      return Math.abs(levelDelta) <= 4;
     default:
       return true;
   }
 }
 
-function buildSharedTraits(radarComparisons = []) {
-  return [...radarComparisons]
+function getModeAdjustedScore(mode, breakdown, currentPlayer, candidatePlayer, currentRating, candidateRating) {
+  const weights = MODE_WEIGHTS[mode] || MODE_WEIGHTS[SIMILARITY_MODES.similarStyle.id];
+  let score =
+    breakdown.position * weights.position +
+    breakdown.radar * weights.radar +
+    breakdown.categories * weights.categories +
+    breakdown.metrics * weights.metrics +
+    breakdown.role * weights.role +
+    breakdown.archetype * weights.archetype +
+    breakdown.level * weights.level +
+    breakdown.age * weights.age +
+    breakdown.reliability * weights.reliability;
+
+  if (breakdown.position < 0.55 && breakdown.role < 0.62) {
+    score *= 0.72;
+  }
+
+  if (mode === SIMILARITY_MODES.youngerAlternative.id) {
+    score *= clamp(0.95 + (getPlayerAge(currentPlayer) - getPlayerAge(candidatePlayer)) * 0.02, 0.95, 1.08);
+  }
+
+  if (mode === SIMILARITY_MODES.higherLevel.id) {
+    score *= clamp(0.96 + Math.min(getLevelDelta(currentRating, candidateRating), 7) * 0.015, 0.96, 1.08);
+  }
+
+  return clamp(score * 100, 0, 100);
+}
+
+function buildSharedTraits(radarComparisons = [], metricComparisons = []) {
+  return [...radarComparisons, ...metricComparisons]
     .filter((entry) => entry.closeness >= 84)
-    .sort((left, right) => right.weight * right.closeness - left.weight * left.closeness)
+    .sort((left, right) => right.closeness - left.closeness)
     .slice(0, 3)
     .map((entry) => entry.label);
 }
 
-function buildSharedStrengthLabels(currentRating, candidateRating, sharedTraits = []) {
-  const archetypeLabel = currentRating?.playerArchetype === candidateRating?.playerArchetype ? currentRating.playerArchetype : null;
-  return [archetypeLabel, ...sharedTraits].filter(Boolean).slice(0, 3);
-}
-
-function buildMajorDifference(radarComparisons = [], currentRating, candidateRating) {
-  const biggestGap = [...radarComparisons].sort((left, right) => right.difference - left.difference)[0];
+function buildMajorDifference(currentRating, candidateRating, radarComparisons = [], metricComparisons = []) {
   const levelDelta = getLevelDelta(currentRating, candidateRating);
 
-  if (Math.abs(levelDelta) >= 5) {
-    return levelDelta > 0 ? 'stronger overall level' : 'lower overall level';
+  if (Math.abs(levelDelta) >= 4) {
+    return levelDelta > 0 ? 'Higher overall level' : 'Lower current level';
   }
 
+  const biggestGap = [...radarComparisons, ...metricComparisons].sort((left, right) => right.difference - left.difference)[0];
+
   if (!biggestGap) {
-    return 'very few meaningful profile gaps';
+    return 'Very few major separation points';
   }
 
   return biggestGap.currentValue > biggestGap.candidateValue ? `${biggestGap.label} is lighter` : `${biggestGap.label} is stronger`;
 }
 
-function getCategoryOverlapSummary(overlap = []) {
-  return overlap.map((key) => key.charAt(0).toUpperCase() + key.slice(1)).join(' + ') || 'Balanced overlap';
+function buildRoleMatchIndicator(currentRating, candidateRating, positionScore, roleSimilarity) {
+  if (currentRating.exactPosition === candidateRating.exactPosition && roleSimilarity >= 0.82) {
+    return 'Exact role fit';
+  }
+
+  if (positionScore >= 0.86 && roleSimilarity >= 0.72) {
+    return 'Strong role fit';
+  }
+
+  return 'Adjacent role fit';
 }
 
-function getScoutingBand(finalSimilarity) {
-  if (finalSimilarity >= 86) {
-    return 'Elite match';
-  }
-
-  if (finalSimilarity >= 78) {
-    return 'Strong match';
-  }
-
-  if (finalSimilarity >= 68) {
-    return 'Useful match';
-  }
-
-  return 'Loose match';
-}
-
-function buildExplanationSentence(mode, currentRating, candidateRating, sharedTraits = [], differenceText = '') {
-  const roleText = getReadableTacticalRoleLabel(candidateRating?.primaryTacticalRole).toLowerCase();
-  const traitsText = sharedTraits.length ? sharedTraits.join(', ') : 'role balance';
-
-  switch (mode) {
-    case SIMILARITY_MODES.sameRole.id:
-      return `Both project as ${roleText} profiles, with especially close overlap in ${traitsText}.`;
-    case SIMILARITY_MODES.higherLevel.id:
-      return `Upgrade option: similar role usage and trait mix, but with a stronger overall performance band.`;
-    case SIMILARITY_MODES.youngerAlternative.id:
-      return `Younger alternative with a comparable role shape, especially through ${traitsText}.`;
-    case SIMILARITY_MODES.budgetAlternative.id:
-      return `Budget-style option: similar profile signals in ${traitsText}, but at a lower current level.`;
-    case SIMILARITY_MODES.sameLevel.id:
-      return `Same-level alternative with comparable output shape and role utility through ${traitsText}.`;
-    default:
-      return `Style match built on shared strengths in ${traitsText}.`;
-  }
-}
-
-function buildRecommendationHeadline(mode, currentRating, candidateRating, finalSimilarity) {
-  const band = getScoutingBand(finalSimilarity);
-
-  switch (mode) {
-    case SIMILARITY_MODES.higherLevel.id:
-      return `${band} upgrade option`;
-    case SIMILARITY_MODES.youngerAlternative.id:
-      return `${band} younger alternative`;
-    case SIMILARITY_MODES.budgetAlternative.id:
-      return `${band} budget alternative`;
-    case SIMILARITY_MODES.sameRole.id:
-      return `${band} same-role recommendation`;
-    case SIMILARITY_MODES.sameLevel.id:
-      return `${band} same-level alternative`;
-    default:
-      return `${band} stylistic match`;
-  }
-}
-
-function getRolePenalty(roleSimilarity, archetypeMatch) {
-  if (roleSimilarity < 55 && archetypeMatch < 60) {
-    return 0.74;
-  }
-
-  if (roleSimilarity < 65) {
-    return 0.88;
-  }
-
-  return 1;
-}
-
-function getModeAdjustedScore(mode, breakdown, currentPlayer, candidatePlayer, currentRating, candidateRating) {
-  const weights = MODE_WEIGHTS[mode] || MODE_WEIGHTS[SIMILARITY_MODES.similarStyle.id];
-  const weightedScore =
-    breakdown.radarSimilarity * weights.radar +
-    breakdown.categorySimilarity * weights.category +
-    breakdown.roleSimilarity * weights.role +
-    breakdown.archetypeMatch * weights.archetype +
-    breakdown.levelSimilarity * weights.level +
-    breakdown.ageSimilarity * weights.age +
-    breakdown.reliabilitySimilarity * weights.reliability;
-  let modeAdjusted = weightedScore * getRolePenalty(breakdown.roleSimilarity, breakdown.archetypeMatch);
-  const levelDelta = getLevelDelta(currentRating, candidateRating);
-
+function buildRecommendationHeadline(mode, finalSimilarity) {
   if (mode === SIMILARITY_MODES.higherLevel.id) {
-    modeAdjusted *= clamp(0.9 + Math.min(levelDelta, 8) * 0.02, 0.9, 1.08);
+    return finalSimilarity >= 82 ? 'Higher-level version' : 'Higher-level stylistic option';
   }
 
   if (mode === SIMILARITY_MODES.youngerAlternative.id) {
-    const ageGap = getPlayerAge(currentPlayer) - getPlayerAge(candidatePlayer);
-    modeAdjusted *= clamp(0.92 + ageGap * 0.03, 0.92, 1.08);
+    return finalSimilarity >= 80 ? 'Younger version of the role' : 'Younger stylistic alternative';
   }
 
-  if (mode === SIMILARITY_MODES.budgetAlternative.id) {
-    modeAdjusted *= clamp(0.92 + Math.abs(Math.min(levelDelta, -3)) * 0.015, 0.92, 1.04);
+  if (mode === SIMILARITY_MODES.sameRole.id) {
+    return finalSimilarity >= 80 ? 'Role-aligned match' : 'Role-adjacent match';
   }
 
-  return clamp(modeAdjusted, 0, 100);
+  if (mode === SIMILARITY_MODES.sameLevel.id) {
+    return finalSimilarity >= 80 ? 'Same-level alternative' : 'Same-band option';
+  }
+
+  return finalSimilarity >= 84 ? 'Strong stylistic match' : 'Useful stylistic match';
+}
+
+function buildComparisonContext(mode, currentPlayer, candidatePlayer, currentRating, candidateRating) {
+  const ageGap = getPlayerAge(currentPlayer) - getPlayerAge(candidatePlayer);
+  const levelDelta = getLevelDelta(currentRating, candidateRating);
+  const contextBits = [];
+
+  if (mode === SIMILARITY_MODES.youngerAlternative.id && ageGap > 0) {
+    contextBits.push(`${ageGap} year${ageGap === 1 ? '' : 's'} younger`);
+  }
+
+  if (mode === SIMILARITY_MODES.higherLevel.id && levelDelta > 0) {
+    contextBits.push(`+${Math.round(levelDelta)} OVR band`);
+  }
+
+  if (mode === SIMILARITY_MODES.sameLevel.id && Math.abs(levelDelta) <= 4) {
+    contextBits.push(`within ${Math.abs(Math.round(levelDelta))} OVR`);
+  }
+
+  const minuteGap = Math.round((getEstimatedMinutes(candidatePlayer, candidateRating) - getEstimatedMinutes(currentPlayer, currentRating)) / 90);
+
+  if (Math.abs(minuteGap) >= 4) {
+    contextBits.push(`${minuteGap > 0 ? '+' : ''}${minuteGap} match-equivalents in sample`);
+  }
+
+  return contextBits.join(' / ');
+}
+
+function buildExplanationSentence(mode, currentRating, candidateRating, sharedTraits = [], majorDifference = '') {
+  const roleLabel = getReadableTacticalRoleLabel(candidateRating.primaryTacticalRole).toLowerCase();
+  const traitsText = sharedTraits.length ? sharedTraits.join(', ').toLowerCase() : 'role balance';
+
+  switch (mode) {
+    case SIMILARITY_MODES.sameRole.id:
+      return `Similar because both project as ${roleLabel} profiles, with close overlap in ${traitsText}.`;
+    case SIMILARITY_MODES.youngerAlternative.id:
+      return `Younger alternative with a similar stylistic base, especially through ${traitsText}.`;
+    case SIMILARITY_MODES.sameLevel.id:
+      return `Same-band option with comparable role usage and profile shape through ${traitsText}.`;
+    case SIMILARITY_MODES.higherLevel.id:
+      return `Higher-level version of the same profile family, with most of the overlap showing in ${traitsText}.`;
+    default:
+      return `Similar because both profiles lean on ${traitsText}${majorDifference ? `, although ${majorDifference.toLowerCase()}` : ''}.`;
+  }
+}
+
+function buildResult(currentPlayer, candidatePlayer, currentRating, candidateRating, mode) {
+  const radarBreakdown = buildRadarComparisons(currentRating, candidateRating);
+  const categoryBreakdown = buildCategoryComparisons(currentRating, candidateRating);
+  const metricBreakdown = buildMetricComparisons(currentRating, candidateRating);
+  const roleSimilarity = getRoleSimilarity(currentRating, candidateRating);
+  const positionScore = getExactPositionScore(currentRating, candidateRating);
+  const archetypeSimilarity = getArchetypeSimilarity(currentRating, candidateRating);
+  const breakdown = {
+    position: positionScore,
+    radar: radarBreakdown.similarity,
+    categories: categoryBreakdown.similarity,
+    metrics: metricBreakdown.similarity,
+    role: roleSimilarity,
+    archetype: archetypeSimilarity,
+    level: getLevelSimilarity(currentRating, candidateRating),
+    age: getAgeSimilarity(currentPlayer, candidatePlayer),
+    reliability: getReliabilitySimilarity(currentPlayer, candidatePlayer, currentRating, candidateRating)
+  };
+  const finalSimilarity = getModeAdjustedScore(mode, breakdown, currentPlayer, candidatePlayer, currentRating, candidateRating);
+  const topSharedTraits = buildSharedTraits(radarBreakdown.comparisons, metricBreakdown.comparisons);
+  const majorDifference = buildMajorDifference(currentRating, candidateRating, radarBreakdown.comparisons, metricBreakdown.comparisons);
+  const explanation = buildExplanationSentence(mode, currentRating, candidateRating, topSharedTraits, majorDifference);
+  const comparisonContext = buildComparisonContext(mode, currentPlayer, candidatePlayer, currentRating, candidateRating);
+
+  return {
+    player: candidatePlayer,
+    rating: candidateRating,
+    finalSimilarity,
+    similarityMode: mode,
+    similarityModeLabel: SIMILARITY_MODES[mode]?.label || SIMILARITY_MODES.similarStyle.label,
+    modeTag: SIMILARITY_MODES[mode]?.tag || 'Match',
+    recommendationHeadline: buildRecommendationHeadline(mode, finalSimilarity),
+    explanation,
+    whyMatch: explanation,
+    roleMatchIndicator: buildRoleMatchIndicator(currentRating, candidateRating, positionScore, roleSimilarity),
+    comparisonContext,
+    topSharedTraits,
+    majorDifference,
+    keyDifferences: [majorDifference],
+    sharedStrengths: topSharedTraits,
+    compactBreakdown: {
+      style: Math.round((0.6 * radarBreakdown.similarity + 0.4 * categoryBreakdown.similarity) * 100),
+      role: Math.round(roleSimilarity * 100),
+      level: Math.round(getLevelSimilarity(currentRating, candidateRating) * 100)
+    },
+    roleMatchScore: Math.round(roleSimilarity * 100),
+    archetypeMatch: Math.round(archetypeSimilarity * 100),
+    featureComparisons: [...radarBreakdown.comparisons, ...metricBreakdown.comparisons],
+    levelDelta: Math.round(getLevelDelta(currentRating, candidateRating)),
+    ageDelta: Math.round(getPlayerAge(candidatePlayer) - getPlayerAge(currentPlayer)),
+    positionExactMatch: currentRating.exactPosition === candidateRating.exactPosition
+  };
 }
 
 export function getEligibleSimilarPlayers(currentPlayer, players, ratingIndex, filters = {}, mode = SIMILARITY_MODES.similarStyle.id) {
-  const currentRating = ratingIndex[getPlayerKey(currentPlayer)];
+  const currentKey = buildPlayerKey(currentPlayer);
+  const currentRating = ratingIndex[getRatingLookupKey(currentPlayer)] || ratingIndex[normalizeString(currentPlayer?.player || '')];
   const normalizedFilters = normalizeFilters(filters);
   const currentLeague = getLeagueName(currentPlayer);
   const currentAge = getPlayerAge(currentPlayer);
@@ -424,9 +492,10 @@ export function getEligibleSimilarPlayers(currentPlayer, players, ratingIndex, f
   }
 
   return players.filter((candidatePlayer) => {
-    const candidateRating = ratingIndex[getPlayerKey(candidatePlayer)];
+    const candidateKey = buildPlayerKey(candidatePlayer);
+    const candidateRating = ratingIndex[getRatingLookupKey(candidatePlayer)] || ratingIndex[normalizeString(candidatePlayer?.player || '')];
 
-    if (!candidateRating || getPlayerKey(candidatePlayer) === getPlayerKey(currentPlayer)) {
+    if (!candidateRating || candidateKey === currentKey) {
       return false;
     }
 
@@ -435,6 +504,10 @@ export function getEligibleSimilarPlayers(currentPlayer, players, ratingIndex, f
     }
 
     if (candidateRating.positionModel !== currentRating.positionModel) {
+      return false;
+    }
+
+    if (getExactPositionScore(currentRating, candidateRating) < 0.45) {
       return false;
     }
 
@@ -462,73 +535,31 @@ export function getEligibleSimilarPlayers(currentPlayer, players, ratingIndex, f
   });
 }
 
-function buildResult(currentPlayer, candidatePlayer, currentRating, candidateRating, mode) {
-  const radarBreakdown = buildRadarComparisons(currentRating, candidateRating);
-  const categoryBreakdown = buildCategorySimilarity(currentRating, candidateRating);
-  const roleBreakdown = buildRoleSimilarity(currentRating, candidateRating);
-  const levelSimilarity = 0.72 * getLevelSimilarity(currentRating, candidateRating) + 0.28 * getPositionMatch(currentRating, candidateRating);
-  const ageSimilarity = getAgeSimilarity(currentPlayer, candidatePlayer);
-  const reliabilitySimilarity = getReliabilitySimilarity(currentPlayer, candidatePlayer, currentRating, candidateRating);
-  const breakdown = {
-    radarSimilarity: radarBreakdown.similarity,
-    categorySimilarity: categoryBreakdown.similarity,
-    roleSimilarity: roleBreakdown.similarity,
-    archetypeMatch: roleBreakdown.archetypeMatch,
-    levelSimilarity,
-    ageSimilarity,
-    reliabilitySimilarity
-  };
-  const finalSimilarity = getModeAdjustedScore(mode, breakdown, currentPlayer, candidatePlayer, currentRating, candidateRating);
-  const topSharedTraits = buildSharedTraits(radarBreakdown.comparisons);
-  const sharedStrengths = buildSharedStrengthLabels(currentRating, candidateRating, topSharedTraits);
-  const majorDifference = buildMajorDifference(radarBreakdown.comparisons, currentRating, candidateRating);
-  const headline = buildRecommendationHeadline(mode, currentRating, candidateRating, finalSimilarity);
-  const explanation = buildExplanationSentence(mode, currentRating, candidateRating, topSharedTraits, majorDifference);
-  const whyMatch = `${headline}. ${explanation}`;
-
-  return {
-    player: candidatePlayer,
-    rating: candidateRating,
-    similarityScore: finalSimilarity,
-    finalSimilarity,
-    similarityMode: mode,
-    similarityModeLabel: SIMILARITY_MODES[mode]?.label || SIMILARITY_MODES.similarStyle.label,
-    modeTag: SIMILARITY_MODES[mode]?.tag || 'Match',
-    recommendationHeadline: headline,
-    explanation,
-    whyMatch,
-    styleMatchSummary: `Shared strengths: ${sharedStrengths.join(', ') || 'balanced role profile'}.`,
-    roleMatchScore: Math.round(roleBreakdown.similarity),
-    categoryOverlapSummary: getCategoryOverlapSummary(categoryBreakdown.overlap),
-    topSharedTraits,
-    sharedStrengths,
-    keyDifferences: [majorDifference],
-    majorDifference,
-    roleVectorSimilarity: roleBreakdown.roleVectorSimilarity,
-    primaryRoleMatch: roleBreakdown.primaryRoleMatch,
-    archetypeMatch: roleBreakdown.archetypeMatch,
-    compactBreakdown: {
-      style: Math.round(0.55 * radarBreakdown.similarity + 0.45 * categoryBreakdown.similarity),
-      role: Math.round(roleBreakdown.similarity),
-      level: Math.round(levelSimilarity)
-    },
-    featureComparisons: radarBreakdown.comparisons
-  };
-}
-
 export function getSimilarPlayersForPlayer(currentPlayer, players, ratingIndex, mode = SIMILARITY_MODES.similarStyle.id, filters = {}) {
-  const currentRating = ratingIndex[getPlayerKey(currentPlayer)];
+  const currentRating = ratingIndex[getRatingLookupKey(currentPlayer)] || ratingIndex[normalizeString(currentPlayer?.player || '')];
 
   if (!currentPlayer || !currentRating) {
     return [];
   }
 
   return getEligibleSimilarPlayers(currentPlayer, players, ratingIndex, filters, mode)
-    .map((candidatePlayer) => buildResult(currentPlayer, candidatePlayer, currentRating, ratingIndex[getPlayerKey(candidatePlayer)], mode))
-    .filter((result) => result.finalSimilarity >= 58)
+    .map((candidatePlayer) => {
+      return buildResult(
+        currentPlayer,
+        candidatePlayer,
+        currentRating,
+        ratingIndex[getRatingLookupKey(candidatePlayer)] || ratingIndex[normalizeString(candidatePlayer?.player || '')],
+        mode
+      );
+    })
+    .filter((result) => result.finalSimilarity >= 60)
     .sort((left, right) => {
       if (right.finalSimilarity !== left.finalSimilarity) {
         return right.finalSimilarity - left.finalSimilarity;
+      }
+
+      if (right.positionExactMatch !== left.positionExactMatch) {
+        return Number(right.positionExactMatch) - Number(left.positionExactMatch);
       }
 
       return right.roleMatchScore - left.roleMatchScore;
@@ -565,10 +596,10 @@ export function debugSimilarPlayers(currentPlayer, mode, filters, results = []) 
     topMatches: results.map((result) => ({
       player: result.player.player,
       similarity: Math.round(result.finalSimilarity),
-      headline: result.recommendationHeadline,
-      role: result.rating.primaryTacticalRoleLabel,
-      sharedStrengths: result.sharedStrengths,
-      difference: result.majorDifference
+      roleMatch: result.roleMatchIndicator,
+      traits: result.topSharedTraits,
+      difference: result.majorDifference,
+      context: result.comparisonContext
     }))
   });
 }

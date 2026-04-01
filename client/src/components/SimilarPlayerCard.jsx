@@ -7,19 +7,27 @@ import { formatTextValue } from '../utils/playerMetrics';
 export default function SimilarPlayerCard({ result, onOpenPlayer }) {
   const player = result?.player;
   const rating = result?.rating;
+  const sharedTraits = (result?.sharedStrengths || result?.topSharedTraits || []).slice(0, 3);
 
   return (
     <article className="similar-player-card">
       <div className="similar-player-card__header">
-        <PlayerHoverPreview metrics={rating} player={player}>
-          <PlayerTextBlock
-            club={player?.squad}
-            league={player?.comp || player?.league}
-            name={player?.player}
-            position={rating?.exactPosition}
-            role={rating?.primaryTacticalRoleLabel}
-          />
-        </PlayerHoverPreview>
+        <div className="similar-player-card__identity">
+          <PlayerHoverPreview metrics={rating} player={player}>
+            <PlayerTextBlock
+              club={player?.squad}
+              league={player?.comp || player?.league}
+              name={player?.player}
+              position={rating?.exactPosition}
+              role={rating?.primaryTacticalRoleLabel}
+            />
+          </PlayerHoverPreview>
+
+          <div className="similar-player-card__badges">
+            <span className="similar-player-card__badge">{formatTextValue(result?.roleMatchIndicator)}</span>
+            <span className="similar-player-card__badge">{formatTextValue(rating?.playerArchetype)}</span>
+          </div>
+        </div>
 
         <div className="similar-player-card__score">
           <span>{result?.modeTag || 'Similarity'}</span>
@@ -33,14 +41,13 @@ export default function SimilarPlayerCard({ result, onOpenPlayer }) {
           <OvrInlineValue metrics={rating} value={formatTextValue(rating?.finalOVR)} />
         </div>
         <span>{formatTextValue(rating?.primaryTacticalRoleLabel)}</span>
-        <span>{formatTextValue(result?.similarityModeLabel)}</span>
+        {result?.comparisonContext ? <span>{formatTextValue(result.comparisonContext)}</span> : null}
       </div>
 
       <div className="similar-player-card__headline">
         <strong>{formatTextValue(result?.recommendationHeadline)}</strong>
-        <p className="similar-player-card__explanation">{formatTextValue(result?.whyMatch || result?.explanation)}</p>
+        <p className="similar-player-card__explanation">{formatTextValue(result?.explanation)}</p>
       </div>
-      <p className="similar-player-card__style">{formatTextValue(result?.styleMatchSummary)}</p>
 
       <div className="similar-player-card__breakdown">
         <div>
@@ -59,9 +66,9 @@ export default function SimilarPlayerCard({ result, onOpenPlayer }) {
 
       <div className="similar-player-card__traits">
         <div className="similar-player-card__trait-group">
-          <span>Shared strengths</span>
+          <span>Shared traits</span>
           <div className="similar-player-card__tags">
-            {(result?.sharedStrengths || result?.topSharedTraits || []).slice(0, 3).map((trait) => (
+            {sharedTraits.map((trait) => (
               <span key={trait}>{trait}</span>
             ))}
           </div>

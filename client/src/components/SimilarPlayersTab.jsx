@@ -46,7 +46,7 @@ export default function SimilarPlayersTab({ currentPlayer, leagueFilter, players
         <div>
           <p className="analysis-kicker">Scouting Matches</p>
           <h2>Similar Players</h2>
-          <p className="insight-card__summary">Find role-aware alternatives, upgrades, younger options, and same-level matches from the current dataset.</p>
+          <p className="insight-card__summary">Find role-aware stylistic matches, younger alternatives, same-level options, and higher-level versions without drifting away from the player’s real tactical lane.</p>
         </div>
       </div>
 
@@ -58,21 +58,17 @@ export default function SimilarPlayersTab({ currentPlayer, leagueFilter, players
       />
 
       {buckets.length ? (
-        <div className="similar-bucket-grid">
+        <div className="similar-mode-strip">
           {buckets.map((bucket) => (
             <button
-              className={`similar-bucket-card${mode === bucket.mode ? ' similar-bucket-card--active' : ''}`}
+              className={`similar-mode-strip__pill${mode === bucket.mode ? ' similar-mode-strip__pill--active' : ''}`}
               key={bucket.key}
               onClick={() => setMode(bucket.mode)}
               type="button"
             >
-              <div className="similar-bucket-card__top">
-                <span>{bucket.tag}</span>
-                <strong>{bucket.count}</strong>
-              </div>
-              <h3>{bucket.label}</h3>
-              <p>{bucket.topResult?.player?.player || 'No lead match'}</p>
-              <small>{bucket.topResult?.recommendationHeadline || 'No recommendation available.'}</small>
+              <strong>{bucket.label}</strong>
+              <span>{bucket.count} matches</span>
+              <small>{bucket.topResult?.player?.player || 'No lead match'}</small>
             </button>
           ))}
         </div>

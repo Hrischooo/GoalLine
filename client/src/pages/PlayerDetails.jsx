@@ -1,17 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import '../styles/player-details.css';
 import PlayerBasicStatsReport from '../components/PlayerBasicStatsReport';
-import LeagueComparisonPanel from '../components/LeagueComparisonPanel';
 import PlayerHeroCard from '../components/PlayerHeroCard';
 import PlayerRadarPanel from '../components/PlayerRadarPanel';
 import PlayerScoutingReport from '../components/PlayerScoutingReport';
 import RoleFitCard from '../components/RoleFitCard';
+import ScoutingInsightsPanel from '../components/ScoutingInsightsPanel';
 import SimilarPlayersTab from '../components/SimilarPlayersTab';
-import StrengthsWeaknessesPanel from '../components/StrengthsWeaknessesPanel';
 import TacticalProfileCard from '../components/TacticalProfileCard';
-import TransferIntelligencePanel from '../components/TransferIntelligencePanel';
+import TeamFitPanel from '../components/TeamFitPanel';
 import { computeDisplayMetrics, formatStatValue, formatTextValue } from '../utils/playerMetrics';
-import { buildLeagueComparisonProfile, buildStrengthsWeaknessesProfile, buildTransferIntelligenceProfile } from '../utils/playerIntelligence';
+import { buildLeagueComparisonProfile } from '../utils/leagueComparison';
+import { buildRiskProfile } from '../utils/riskProfile';
+import { buildStrengthsWeaknessesProfile } from '../utils/strengthsWeaknesses';
+import { buildSystemSuitabilityProfile } from '../utils/systemSuitability';
 import { buildPlayerKey, getLeagueName, getPlayerByIdOrUniqueKey } from '../utils/dataset';
 import { buildBasicReportSections } from '../utils/playerViews';
 import { rememberRecentPlayer } from '../utils/recentPlayers';
@@ -33,14 +35,18 @@ export default function PlayerDetails({ header, leagueFilter, playerIdentifier, 
   const leagueName = player ? getLeagueName(player) : '';
   const playerKey = player ? buildPlayerKey(player) : '';
   const basicSections = useMemo(() => (player && metrics ? buildBasicReportSections(player, metrics) : []), [metrics, player]);
-  const strengthsWeaknesses = useMemo(() => (player && metrics ? buildStrengthsWeaknessesProfile(player, metrics) : null), [metrics, player]);
+  const strengthsWeaknesses = useMemo(
+    () => (player && metrics ? buildStrengthsWeaknessesProfile(player, metrics, players.data || [], ratingIndex) : null),
+    [metrics, player, players.data, ratingIndex]
+  );
   const leagueComparison = useMemo(
     () => (player && metrics ? buildLeagueComparisonProfile(player, metrics, players.data || [], ratingIndex) : null),
     [metrics, player, players.data, ratingIndex]
   );
-  const transferIntelligence = useMemo(
-    () => (player && metrics ? buildTransferIntelligenceProfile(player, metrics, teams) : null),
-    [metrics, player, teams]
+  const riskProfile = useMemo(() => (player && metrics ? buildRiskProfile(player, metrics) : null), [metrics, player]);
+  const systemSuitability = useMemo(
+    () => (player && metrics ? buildSystemSuitabilityProfile(player, metrics, strengthsWeaknesses) : null),
+    [metrics, player, strengthsWeaknesses]
   );
 
   useEffect(() => {
@@ -255,12 +261,25 @@ export default function PlayerDetails({ header, leagueFilter, playerIdentifier, 
                 </section>
 
                 <section className="analysis-insights-grid">
-                  <StrengthsWeaknessesPanel profile={strengthsWeaknesses} />
-                  <LeagueComparisonPanel comparison={leagueComparison} />
+                  <ScoutingInsightsPanel
+                    comparison={leagueComparison}
+                    playerIdentifier={playerIdentifier}
+                    riskProfile={riskProfile}
+                    strengthsWeaknesses={strengthsWeaknesses}
+                    systemSuitability={systemSuitability}
+                  />
                 </section>
 
                 <section className="analysis-transfer-section">
-                  <TransferIntelligencePanel profile={transferIntelligence} />
+                  <TeamFitPanel
+                    metrics={metrics}
+                    onOpenPlayer={onOpenPlayer}
+                    player={player}
+                    playerIdentifier={playerIdentifier}
+                    players={players.data || []}
+                    ratingIndex={ratingIndex}
+                    teams={teams}
+                  />
                 </section>
 
                 <div className="metric-mode-tabs">

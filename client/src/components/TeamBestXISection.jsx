@@ -1,61 +1,58 @@
-import OvrInlineValue from './OvrInlineValue';
-import PlayerAvatar from './PlayerAvatar';
-import { buildPlayerKey } from '../utils/dataset';
-import { formatTextValue } from '../utils/playerMetrics';
+import TeamFormationBoard from './TeamFormationBoard';
+import TacticalModeSelector from './TacticalModeSelector';
+import { formatStatValue, formatTextValue } from '../utils/playerMetrics';
 
-function groupSlotsByLine(xi = []) {
-  return [
-    ['attack', xi.filter((slot) => slot.line === 'attack')],
-    ['midfield', xi.filter((slot) => slot.line === 'midfield')],
-    ['defense', xi.filter((slot) => slot.line === 'defense')],
-    ['goalkeeper', xi.filter((slot) => slot.line === 'goalkeeper')]
-  ].filter(([, slots]) => slots.length);
-}
-
-export default function TeamBestXISection({ bestXI, onOpenPlayer }) {
-  const groupedLines = groupSlotsByLine(bestXI?.xi || []);
+export default function TeamBestXISection({ activeLineup, activeMode, modeOptions = [], onModeChange, onOpenPlayer }) {
+  const hasBestXI = Boolean(activeLineup?.xi?.length);
 
   return (
-    <section className="team-block">
-      <div className="team-block__header">
+    <section className="team-block team-best-xi-section">
+      <div className="team-block__header team-block__header--stacked">
         <div>
           <p className="home-kicker">Auto Selected</p>
           <h2>Best XI</h2>
         </div>
-        <span className="team-block__meta">{formatTextValue(bestXI?.formation, 'N/A')}</span>
+        <div className="team-best-xi-section__controls">
+          <span className="team-block__meta">{formatTextValue(activeLineup?.formation, 'N/A')}</span>
+          <TacticalModeSelector activeMode={activeMode} modes={modeOptions} onChange={onModeChange} />
+        </div>
       </div>
 
-      <div className="team-best-xi">
-        {groupedLines.map(([lineKey, slots]) => (
-          <div className={`team-best-xi__line team-best-xi__line--${lineKey}`} key={lineKey}>
-            {slots.map((slot) => (
-              <button
-                className="team-best-xi__card"
-                key={slot.slotId}
-                onClick={() => onOpenPlayer?.(buildPlayerKey(slot.assignedPlayer))}
-                type="button"
-              >
-                <div className="team-best-xi__identity">
-                  <PlayerAvatar name={slot.assignedPlayer?.player} size="small" />
-                  <div>
-                    <span>{slot.slotLabel}</span>
-                    <strong>{formatTextValue(slot.assignedPlayer?.player)}</strong>
-                    <small>{formatTextValue(slot.assignedPlayer?.metrics?.primaryTacticalRoleLabel)}</small>
-                  </div>
-                </div>
+      {hasBestXI ? (
+        <div className="team-best-xi-board">
+          <div className="team-best-xi-board__topbar">
+            <div className="team-best-xi-board__copy">
+              <strong>{activeLineup?.modeLabel || 'Lineup mode'}</strong>
+              <p>{activeLineup?.explanationSummary || 'The tactical board reflects the strongest current lineup for the active shape.'}</p>
+            </div>
 
-                <div className="team-best-xi__meta">
-                  <OvrInlineValue className="team-best-xi__ovr" metrics={slot.assignedPlayer?.metrics} value={slot.assignedPlayer?.metrics?.finalOVR} />
-                  <div className="team-best-xi__fit">
-                    <span>Fit</span>
-                    <strong>{Math.round(slot.fitScore)}%</strong>
-                  </div>
-                </div>
-              </button>
-            ))}
+            <div className="team-best-xi-board__meta">
+              <div className="team-best-xi-board__meta-tile">
+                <span>Formation</span>
+                <strong>{formatTextValue(activeLineup?.formation, 'N/A')}</strong>
+              </div>
+              <div className="team-best-xi-board__meta-tile">
+                <span>XI Rating</span>
+                <strong>{formatStatValue(activeLineup?.overallTeamRating, '-')}</strong>
+              </div>
+              <div className="team-best-xi-board__meta-tile">
+                <span>Slot Fit</span>
+                <strong>{formatStatValue(activeLineup?.slotFitAverage, '-')}</strong>
+              </div>
+              <div className="team-best-xi-board__meta-tile">
+                <span>Confidence</span>
+                <strong>{Math.round((activeLineup?.formationConfidence || 0) * 100)}%</strong>
+              </div>
+            </div>
           </div>
-        ))}
-      </div>
+
+          <TeamFormationBoard formation={activeLineup?.formation} onOpenPlayer={onOpenPlayer} variant="full" xi={activeLineup?.xi || []} />
+        </div>
+      ) : (
+        <div className="team-best-xi team-best-xi--empty">
+          <p>No Best XI data is available yet.</p>
+        </div>
+      )}
     </section>
   );
 }
