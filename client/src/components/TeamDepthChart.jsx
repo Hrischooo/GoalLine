@@ -1,14 +1,10 @@
+import SectionHeader from './SectionHeader';
 import { formatTextValue } from '../utils/playerMetrics';
 
 export default function TeamDepthChart({ depthChart = [] }) {
   return (
     <section className="team-block">
-      <div className="team-block__header">
-        <div>
-          <p className="home-kicker">Squad Structure</p>
-          <h2>Position Depth</h2>
-        </div>
-      </div>
+      <SectionHeader className="team-block__header" kicker="Squad Structure" title="Position Depth" />
 
       <div className="team-depth-chart">
         {depthChart.map((row) => (

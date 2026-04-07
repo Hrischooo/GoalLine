@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import SectionHeader from './SectionHeader';
 import { buildPlayerKey } from '../utils/dataset';
 import { buildReplacementFinderProfile } from '../utils/replacementFinder';
 import { buildSquadGapFinderProfile } from '../utils/squadGapFinder';
@@ -90,12 +91,7 @@ export default function RecruitmentIntelligencePanel({ onOpenPlayer, players, ra
 
   return (
     <section className="team-block team-recruitment-panel">
-      <div className="team-block__header">
-        <div>
-          <p className="home-kicker">Recruitment Intelligence</p>
-          <h2>Squad Gaps & Target Profiles</h2>
-        </div>
-      </div>
+      <SectionHeader className="team-block__header" kicker="Recruitment Intelligence" title="Squad Gaps & Target Profiles" />
 
       <div className="team-recruitment-panel__summary">
         <div className="team-stat-tile">

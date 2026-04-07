@@ -1,3 +1,4 @@
+import SectionHeader from './SectionHeader';
 import { formatStatValue, formatTextValue } from '../utils/playerMetrics';
 
 function RatingTile({ label, value }) {
@@ -14,12 +15,7 @@ export default function TeamRatingPanel({ bestXI, tacticalIdentitySummary, team 
 
   return (
     <section className="team-block">
-      <div className="team-block__header">
-        <div>
-          <p className="home-kicker">Best XI Rating</p>
-          <h2>Team Level</h2>
-        </div>
-      </div>
+      <SectionHeader className="team-block__header" kicker="Best XI Rating" title="Team Level" />
 
       <div className="team-rating-panel">
         <div className="team-rating-panel__hero">

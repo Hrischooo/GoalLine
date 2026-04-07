@@ -178,18 +178,20 @@
 }
 
 .team-shell {
-  width: min(1260px, calc(100% - 32px));
+  width: min(1440px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 16px 0 48px;
+  padding: 18px 0 56px;
 }
 
 .team-hero,
 .team-block,
 .team-empty-state {
   margin-top: 22px;
-  padding: 26px;
-  border-radius: 30px;
-  background: linear-gradient(145deg, rgba(12, 19, 38, 0.96), rgba(16, 20, 34, 0.94));
+  padding: 28px;
+  border-radius: 32px;
+  background:
+    radial-gradient(circle at top right, rgba(73, 230, 255, 0.06), transparent 26%),
+    linear-gradient(145deg, rgba(12, 19, 38, 0.98), rgba(16, 20, 34, 0.96));
 }
 
 .team-hero {
@@ -313,38 +315,7 @@
 
 .tactical-mode-selector {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.tactical-mode-selector__button {
-  display: grid;
-  gap: 5px;
-  min-width: 148px;
-  padding: 10px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--text-main);
-  text-align: left;
-  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
-}
-
-.tactical-mode-selector__button span {
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.tactical-mode-selector__button small {
-  color: var(--text-muted);
-  font-size: 0.74rem;
-}
-
-.tactical-mode-selector__button:hover,
-.tactical-mode-selector__button--active {
-  transform: translateY(-1px);
-  border-color: rgba(73, 230, 255, 0.24);
-  background: rgba(73, 230, 255, 0.09);
+  min-width: min(100%, 380px);
 }
 
 .team-identity-visual__header {
@@ -1192,7 +1163,7 @@
 
 @media (max-width: 760px) {
   .team-shell {
-    width: min(100% - 24px, 1260px);
+    width: min(100% - 24px, 1440px);
     padding-top: 12px;
   }
 

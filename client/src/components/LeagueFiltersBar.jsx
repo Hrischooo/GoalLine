@@ -1,3 +1,5 @@
+import SectionHeader from './SectionHeader';
+
 const ROLE_CONFIDENCE_OPTIONS = [
   { value: 'all', label: 'Any Confidence' },
   { value: 'strong', label: 'Strong' },
@@ -8,15 +10,16 @@ const ROLE_CONFIDENCE_OPTIONS = [
 export default function LeagueFiltersBar({ filters, options, onChange, onReset, rankingViews, sortOptions }) {
   return (
     <section className="league-block">
-      <div className="league-block__header">
-        <div>
-          <p className="home-kicker">Explorer Controls</p>
-          <h2>Filter And Rank</h2>
-        </div>
-        <button className="secondary-button" type="button" onClick={onReset}>
-          Reset filters
-        </button>
-      </div>
+      <SectionHeader
+        actions={
+          <button className="secondary-button" type="button" onClick={onReset}>
+            Reset filters
+          </button>
+        }
+        className="league-block__header"
+        kicker="Explorer Controls"
+        title="Filter And Rank"
+      />
 
       <div className="league-ranking-chips" role="tablist" aria-label="League ranking views">
         {rankingViews.map((view) => (

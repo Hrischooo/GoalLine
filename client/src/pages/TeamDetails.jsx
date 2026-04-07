@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import ClubBadge from '../components/ClubBadge';
 import OvrInlineValue from '../components/OvrInlineValue';
 import PlayerAvatar from '../components/PlayerAvatar';
+import SectionHeader from '../components/SectionHeader';
 import TacticalModeSelector from '../components/TacticalModeSelector';
 import TeamBestXISection from '../components/TeamBestXISection';
 import TeamDepthChart from '../components/TeamDepthChart';
@@ -266,13 +267,12 @@ export default function TeamDetails({ header, players, ratingIndex, teamIdentifi
 
         <section className="team-layout">
           <section className="team-block">
-            <div className="team-block__header team-block__header--stacked">
-              <div>
-                <p className="home-kicker">Team Identity</p>
-                <h2>Tactical Identity</h2>
-              </div>
-              <TacticalModeSelector activeMode={resolvedMode} modes={availableModes} onChange={setActiveMode} />
-            </div>
+            <SectionHeader
+              actions={<TacticalModeSelector activeMode={resolvedMode} modes={availableModes} onChange={setActiveMode} />}
+              className="team-block__header team-block__header--stacked"
+              kicker="Team Identity"
+              title="Tactical Identity"
+            />
 
             <div className="team-identity-grid">
               <div className="team-identity-copy">
@@ -335,12 +335,7 @@ export default function TeamDetails({ header, players, ratingIndex, teamIdentifi
           </section>
 
           <section className="team-block">
-            <div className="team-block__header">
-              <div>
-                <p className="home-kicker">Squad Snapshot</p>
-                <h2>Derived Analytics</h2>
-              </div>
-            </div>
+            <SectionHeader className="team-block__header" kicker="Squad Snapshot" title="Derived Analytics" />
 
             <div className="team-stats-grid">
               <TeamStatTile label="Total Goals" value={formatStatValue(team.goalsScored, '0')} />
@@ -365,12 +360,7 @@ export default function TeamDetails({ header, players, ratingIndex, teamIdentifi
         <section className="team-layout">
           <TeamDepthChart depthChart={team.positionDepth || []} />
           <section className="team-block">
-            <div className="team-block__header">
-              <div>
-                <p className="home-kicker">Key Figures</p>
-                <h2>Leaders & Talents</h2>
-              </div>
-            </div>
+            <SectionHeader className="team-block__header" kicker="Key Figures" title="Leaders & Talents" />
 
             <div className="team-mini-lists">
               <MiniPlayerList label="Key Players" onNavigate={onNavigate} players={team.keyPlayers || []} />
@@ -389,15 +379,12 @@ export default function TeamDetails({ header, players, ratingIndex, teamIdentifi
         />
 
         <section className="team-block">
-          <div className="team-block__header team-block__header--stacked">
-            <div>
-              <p className="home-kicker">Squad</p>
-              <h2>Player Profiles</h2>
-            </div>
-            <span className="team-block__meta">
-              Showing {sortedPlayers.length} of {squadPlayers.length}
-            </span>
-          </div>
+          <SectionHeader
+            className="team-block__header team-block__header--stacked"
+            kicker="Squad"
+            meta={<span className="team-block__meta">Showing {sortedPlayers.length} of {squadPlayers.length}</span>}
+            title="Player Profiles"
+          />
 
           <div className="team-squad-toolbar">
             <label className="team-squad-filter">

@@ -1,4 +1,5 @@
 import PlayerRadarChart from './PlayerRadarChart';
+import SectionHeader from './SectionHeader';
 import { canOverlayRadarProfiles, getPlayerRadarProfile } from '../utils/playerRadar';
 
 function buildChartProfile(profile, name, stroke, fill) {
@@ -34,12 +35,11 @@ export default function CompareRadarSection({ leftMetrics, leftPlayer, rightMetr
 
   return (
     <section className="compare-section">
-      <div className="compare-section__header">
-        <div>
-          <p className="home-kicker">Position Radar</p>
-          <h2>{canOverlay ? 'Overlay profile comparison' : 'Position-aware profile shapes'}</h2>
-        </div>
-      </div>
+      <SectionHeader
+        className="compare-section__header"
+        kicker="Position Radar"
+        title={canOverlay ? 'Overlay profile comparison' : 'Position-aware profile shapes'}
+      />
 
       {!canOverlay ? (
         <p className="compare-scout-note">Position-aware radar charts switch axes by role model, so different positions are shown side by side instead of forced onto one shared shape.</p>

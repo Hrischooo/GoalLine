@@ -2,6 +2,7 @@ import ClubBadge from './ClubBadge';
 import OvrInlineValue from './OvrInlineValue';
 import PlayerHoverPreview from './PlayerHoverPreview';
 import PlayerTextBlock from './PlayerTextBlock';
+import SectionHeader from './SectionHeader';
 import { formatStatValue, formatTextValue } from '../utils/playerMetrics';
 import { getLeagueName } from '../utils/dataset';
 
@@ -17,15 +18,12 @@ function PlayerStatPair({ label, value }) {
 export default function LeaguePlayerExplorer({ canLoadMore, onLoadMore, onOpenPlayer, players, statColumns, totalPlayers }) {
   return (
     <section className="league-block">
-      <div className="league-block__header">
-        <div>
-          <p className="home-kicker">League Explorer</p>
-          <h2>Players</h2>
-        </div>
-        <span className="league-block__meta">
-          Showing {players.length} of {totalPlayers}
-        </span>
-      </div>
+      <SectionHeader
+        className="league-block__header"
+        kicker="League Explorer"
+        meta={<span className="league-block__meta">Showing {players.length} of {totalPlayers}</span>}
+        title="Players"
+      />
 
       <div className="league-explorer-list">
         {players.map((player) => (

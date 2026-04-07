@@ -7,9 +7,9 @@
 }
 
 .league-shell {
-  width: min(1240px, calc(100% - 32px));
+  width: min(1440px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 16px 0 48px;
+  padding: 18px 0 56px;
 }
 
 .league-overview-page__hero,
@@ -27,9 +27,11 @@
 .league-block,
 .league-empty-state {
   margin-top: 22px;
-  padding: 26px;
-  border-radius: 28px;
-  background: linear-gradient(135deg, rgba(12, 19, 38, 0.96), rgba(16, 20, 34, 0.94));
+  padding: 28px;
+  border-radius: 32px;
+  background:
+    radial-gradient(circle at top right, rgba(73, 230, 255, 0.06), transparent 24%),
+    linear-gradient(135deg, rgba(12, 19, 38, 0.98), rgba(16, 20, 34, 0.96));
 }
 
 .league-overview-page__hero,
@@ -92,8 +94,10 @@
   gap: 18px;
   width: 100%;
   padding: 22px;
-  border-radius: 26px;
-  background: linear-gradient(145deg, rgba(10, 16, 34, 0.94), rgba(12, 16, 28, 0.96));
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top right, rgba(73, 230, 255, 0.05), transparent 24%),
+    linear-gradient(145deg, rgba(10, 16, 34, 0.96), rgba(12, 16, 28, 0.98));
   color: var(--text-main);
   text-align: left;
   cursor: pointer;
@@ -364,7 +368,7 @@
 
 @media (max-width: 760px) {
   .league-shell {
-    width: min(100% - 24px, 1240px);
+    width: min(100% - 24px, 1440px);
     padding-top: 12px;
   }
 

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import InfoTooltip from './InfoTooltip';
+import SectionHeader from './SectionHeader';
 import { buildScoutingComparison, formatScoutingMetricValue } from '../utils/playerMetrics';
 import { buildBasicComparison, formatBasicMetricValue } from '../utils/playerViews';
 
@@ -114,12 +115,7 @@ export default function CompareStatsSection({ leftMetrics, rightMetrics, leftPla
   if (!comparison.sections.length) {
     return (
       <section className="compare-section">
-        <div className="compare-section__header">
-          <div>
-            <p className="home-kicker">Scouting Comparison</p>
-            <h2>Advanced Metric Matchup</h2>
-          </div>
-        </div>
+        <SectionHeader className="compare-section__header" kicker="Scouting Comparison" title="Advanced Metric Matchup" />
         <p className="compare-message">These players do not share enough position-safe advanced metrics for a direct scouting comparison.</p>
       </section>
     );
@@ -131,36 +127,36 @@ export default function CompareStatsSection({ leftMetrics, rightMetrics, leftPla
 
   return (
     <section className="compare-section">
-      <div className="compare-section__header">
-        <div>
-          <p className="home-kicker">Scouting Comparison</p>
-          <h2>{metricMode === 'advanced' ? 'Advanced Metric Matchup' : 'Basic Stat Matchup'}</h2>
-        </div>
+      <SectionHeader
+        actions={
+          <div className="compare-stats-toolbar">
+            <div className="metric-mode-tabs metric-mode-tabs--compare">
+              <button
+                className={`metric-mode-tabs__button${metricMode === 'basic' ? ' metric-mode-tabs__button--active' : ''}`}
+                onClick={() => handleMetricModeChange('basic')}
+                type="button"
+              >
+                Basic Stats
+              </button>
+              <button
+                className={`metric-mode-tabs__button${metricMode === 'advanced' ? ' metric-mode-tabs__button--active' : ''}`}
+                onClick={() => handleMetricModeChange('advanced')}
+                type="button"
+              >
+                Advanced Metrics
+              </button>
+            </div>
 
-        <div className="compare-stats-toolbar">
-          <div className="metric-mode-tabs metric-mode-tabs--compare">
-            <button
-              className={`metric-mode-tabs__button${metricMode === 'basic' ? ' metric-mode-tabs__button--active' : ''}`}
-              onClick={() => handleMetricModeChange('basic')}
-              type="button"
-            >
-              Basic Stats
-            </button>
-            <button
-              className={`metric-mode-tabs__button${metricMode === 'advanced' ? ' metric-mode-tabs__button--active' : ''}`}
-              onClick={() => handleMetricModeChange('advanced')}
-              type="button"
-            >
-              Advanced Metrics
-            </button>
+            <div className="compare-scout-summary">
+              <span>Player A wins: {comparison.leftWins}</span>
+              <span>Player B wins: {comparison.rightWins}</span>
+            </div>
           </div>
-
-          <div className="compare-scout-summary">
-            <span>Player A wins: {comparison.leftWins}</span>
-            <span>Player B wins: {comparison.rightWins}</span>
-          </div>
-        </div>
-      </div>
+        }
+        className="compare-section__header"
+        kicker="Scouting Comparison"
+        title={metricMode === 'advanced' ? 'Advanced Metric Matchup' : 'Basic Stat Matchup'}
+      />
 
       {!comparison.samePositionFamily ? (
         <p className="compare-scout-note">

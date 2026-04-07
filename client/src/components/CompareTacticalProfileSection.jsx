@@ -1,3 +1,5 @@
+import SectionHeader from './SectionHeader';
+
 function getWinner(leftValue, rightValue) {
   if (leftValue === rightValue) {
     return 'tie';
@@ -25,12 +27,7 @@ function formatValue(key, value) {
 export default function CompareTacticalProfileSection({ leftMetrics, rightMetrics }) {
   return (
     <section className="compare-section">
-      <div className="compare-section__header">
-        <div>
-          <p className="home-kicker">Tactical Profile</p>
-          <h2>Side-By-Side Role Identity</h2>
-        </div>
-      </div>
+      <SectionHeader className="compare-section__header" kicker="Tactical Profile" title="Side-By-Side Role Identity" />
 
       <div className="compare-profile-table">
         {PROFILE_ROWS.map((row) => {

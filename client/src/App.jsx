@@ -26,14 +26,22 @@ function getRoute(locationLike = window.location) {
   const pathname = locationLike.pathname || '/';
   const search = locationLike.search || '';
   const searchParams = new URLSearchParams(search);
+  const playerView = searchParams.get('view') || 'overview';
+  const playerReport = searchParams.get('report') || 'analytics';
 
   if (pathname === '/compare') {
+    const compareMode = searchParams.get('mode') === 'teams' ? 'teams' : 'players';
     return {
       page: 'compare',
       player1: searchParams.get('player1') || '',
       player2: searchParams.get('player2') || '',
+      compareMode,
+      team1: searchParams.get('team1') || '',
+      team2: searchParams.get('team2') || '',
       playerId: '',
       playerName: '',
+      playerView: 'overview',
+      playerReport: 'analytics',
       leagueId: '',
       teamName: ''
     };
@@ -46,6 +54,8 @@ function getRoute(locationLike = window.location) {
       player2: '',
       playerId: '',
       playerName: '',
+      playerView: 'overview',
+      playerReport: 'analytics',
       leagueId: '',
       teamName: ''
     };
@@ -59,6 +69,8 @@ function getRoute(locationLike = window.location) {
         page: 'player-details',
         playerId,
         playerName: '',
+        playerView: playerView === 'analysis' || playerView === 'report' || playerView === 'similar' ? playerView : 'overview',
+        playerReport: playerReport === 'stats' ? 'stats' : 'analytics',
         player1: '',
         player2: '',
         leagueId: '',
@@ -75,6 +87,8 @@ function getRoute(locationLike = window.location) {
         page: 'player-details',
         playerId: '',
         playerName,
+        playerView: playerView === 'analysis' || playerView === 'report' || playerView === 'similar' ? playerView : 'overview',
+        playerReport: playerReport === 'stats' ? 'stats' : 'analytics',
         player1: '',
         player2: '',
         leagueId: '',
@@ -93,6 +107,8 @@ function getRoute(locationLike = window.location) {
         player2: '',
         playerId: '',
         playerName: '',
+        playerView: 'overview',
+        playerReport: 'analytics',
         leagueId,
         teamName: ''
       };
@@ -109,6 +125,8 @@ function getRoute(locationLike = window.location) {
         player2: '',
         playerId: '',
         playerName: '',
+        playerView: 'overview',
+        playerReport: 'analytics',
         leagueId: '',
         teamName
       };
@@ -121,6 +139,8 @@ function getRoute(locationLike = window.location) {
     player2: '',
     playerId: '',
     playerName: '',
+    playerView: 'overview',
+    playerReport: 'analytics',
     leagueId: '',
     teamName: ''
   };
@@ -304,11 +324,14 @@ export default function App() {
         header={header}
         leagueFilter={LEAGUE_FILTERS.all.id}
         playerIdentifier={route.playerId || route.playerName || ''}
+        playerReport={route.playerReport}
+        playerView={route.playerView}
         players={fullPlayerDataset}
         teams={teamProfiles}
         ratingIndex={ratingIndex}
         onBack={() => navigateTo('/')}
         onCompare={() => navigateTo(`/compare?player1=${encodeURIComponent(resolvedPlayer ? buildPlayerKey(resolvedPlayer) : '')}`)}
+        onNavigate={navigateTo}
         onOpenPlayer={(playerKey) => navigateTo(`/player/${encodeURIComponent(playerKey)}`)}
         onOpenTeam={() => {
           if (resolvedPlayerTeam) {
@@ -356,12 +379,16 @@ export default function App() {
         header={header}
         initialPlayer1={route.player1}
         initialPlayer2={route.player2}
+        initialMode={route.compareMode}
+        initialTeam1={route.team1}
+        initialTeam2={route.team2}
         players={fullPlayerDataset}
         ratingIndex={ratingIndex}
+        teams={teamProfiles}
         onNavigate={navigateTo}
       />
     );
   }
 
-  return <Home header={header} leagues={leagues} status={status} players={filteredPlayerDataset} ratingIndex={ratingIndex} onNavigate={navigateTo} />;
+  return <Home header={header} leagues={leagues} status={status} players={filteredPlayerDataset} ratingIndex={ratingIndex} teams={teamProfiles} onNavigate={navigateTo} />;
 }

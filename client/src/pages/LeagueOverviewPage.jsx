@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import LeagueCard from '../components/LeagueCard';
+import SectionHeader from '../components/SectionHeader';
 import '../styles/league-details.css';
 
 export default function LeagueOverviewPage({ header, leagues, onNavigate }) {
@@ -17,13 +18,13 @@ export default function LeagueOverviewPage({ header, leagues, onNavigate }) {
         {header}
 
         <section className="league-overview-page__hero">
-          <div>
-            <p className="home-kicker">Multi-League Discovery</p>
-            <h1>Browse leagues as scouting environments, not just filtered lists.</h1>
-            <p className="league-overview-page__subtitle">
-              Each competition opens into its own tactical explorer with leaderboards, role filters, and position-aware player discovery.
-            </p>
-          </div>
+          <SectionHeader
+            className="league-overview-page__hero-copy"
+            kicker="Multi-League Discovery"
+            subtitle="Each competition opens into its own tactical explorer with leaderboards, role filters, and position-aware player discovery."
+            title="Browse leagues as scouting environments, not just filtered lists."
+            titleAs="h1"
+          />
 
           <div className="league-overview-page__summary">
             <div>

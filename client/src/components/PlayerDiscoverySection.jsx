@@ -64,8 +64,27 @@ function getSortValue(record, sortBy) {
   }
 }
 
+function getDiscoveryMetricPercent(metrics, metricKey, fallbackValue) {
+  const percentile = toNumber(metrics?.scoutingMetricMap?.[metricKey]?.percentile);
+
+  if (percentile > 0) {
+    return Math.max(16, Math.min(100, Math.round(percentile)));
+  }
+
+  const value = toNumber(fallbackValue);
+
+  switch (metricKey) {
+    case 'goals_p90':
+      return Math.max(16, Math.min(100, Math.round(value * 68)));
+    case 'interceptions':
+      return Math.max(16, Math.min(100, Math.round(value * 10)));
+    default:
+      return Math.max(16, Math.min(100, Math.round(value)));
+  }
+}
+
 function PlayerDiscoveryCard({ player, metrics, onNavigate }) {
-  const previewMetrics = getDiscoveryPreviewMetrics(player, metrics);
+  const previewMetrics = getDiscoveryPreviewMetrics(player, metrics).slice(0, 2);
 
   return (
     <button className="player-card player-card--interactive discovery-player-card" onClick={() => onNavigate(`/player/${buildPlayerKey(player)}`)} type="button">
@@ -97,11 +116,19 @@ function PlayerDiscoveryCard({ player, metrics, onNavigate }) {
         <span>{metrics.playerArchetype}</span>
       </div>
 
-      <div className="player-stats discovery-player-card__stats">
+      <div className="discovery-player-card__stats-panel">
         {previewMetrics.map((metric) => (
-          <div key={metric.key}>
-            <span>{metric.label}</span>
-            <strong className={metric.tone}>{metric.formattedValue}</strong>
+          <div className="discovery-player-card__metric" key={metric.key}>
+            <div className="discovery-player-card__metric-row">
+              <span>{metric.label}</span>
+              <strong className={metric.tone}>{metric.formattedValue}</strong>
+            </div>
+            <div className="discovery-player-card__metric-track">
+              <div
+                className={`discovery-player-card__metric-fill ${metric.tone}`}
+                style={{ width: `${getDiscoveryMetricPercent(metrics, metric.key, metric.value)}%` }}
+              />
+            </div>
           </div>
         ))}
       </div>

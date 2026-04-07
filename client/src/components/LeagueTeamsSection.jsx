@@ -1,4 +1,5 @@
 import TeamCard from './TeamCard';
+import SectionHeader from './SectionHeader';
 
 export default function LeagueTeamsSection({ onOpenTeam, teams }) {
   if (!teams.length) {
@@ -7,13 +8,12 @@ export default function LeagueTeamsSection({ onOpenTeam, teams }) {
 
   return (
     <section className="league-block">
-      <div className="league-block__header">
-        <div>
-          <p className="home-kicker">Tactical Units</p>
-          <h2>Teams</h2>
-        </div>
-        <span className="league-block__meta">{teams.length} club profiles</span>
-      </div>
+      <SectionHeader
+        className="league-block__header"
+        kicker="Tactical Units"
+        meta={<span className="league-block__meta">{teams.length} club profiles</span>}
+        title="Teams"
+      />
 
       <div className="league-teams-grid">
         {teams.map((team) => (

@@ -1,3 +1,4 @@
+import SectionHeader from './SectionHeader';
 import TeamFormationBoard from './TeamFormationBoard';
 import TacticalModeSelector from './TacticalModeSelector';
 import { formatStatValue, formatTextValue } from '../utils/playerMetrics';
@@ -7,16 +8,17 @@ export default function TeamBestXISection({ activeLineup, activeMode, modeOption
 
   return (
     <section className="team-block team-best-xi-section">
-      <div className="team-block__header team-block__header--stacked">
-        <div>
-          <p className="home-kicker">Auto Selected</p>
-          <h2>Best XI</h2>
-        </div>
-        <div className="team-best-xi-section__controls">
-          <span className="team-block__meta">{formatTextValue(activeLineup?.formation, 'N/A')}</span>
-          <TacticalModeSelector activeMode={activeMode} modes={modeOptions} onChange={onModeChange} />
-        </div>
-      </div>
+      <SectionHeader
+        actions={
+          <div className="team-best-xi-section__controls">
+            <span className="team-block__meta">{formatTextValue(activeLineup?.formation, 'N/A')}</span>
+            <TacticalModeSelector activeMode={activeMode} modes={modeOptions} onChange={onModeChange} />
+          </div>
+        }
+        className="team-block__header team-block__header--stacked"
+        kicker="Auto Selected"
+        title="Best XI"
+      />
 
       {hasBestXI ? (
         <div className="team-best-xi-board">

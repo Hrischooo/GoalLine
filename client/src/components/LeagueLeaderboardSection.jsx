@@ -1,6 +1,7 @@
 import ClubBadge from './ClubBadge';
 import PlayerHoverPreview from './PlayerHoverPreview';
 import PlayerTextBlock from './PlayerTextBlock';
+import SectionHeader from './SectionHeader';
 import { formatStatValue, formatTextValue } from '../utils/playerMetrics';
 import { getLeagueName } from '../utils/dataset';
 
@@ -44,12 +45,7 @@ function LeaderboardCard({ board, onOpenPlayer }) {
 export default function LeagueLeaderboardSection({ boards, onOpenPlayer }) {
   return (
     <section className="league-block">
-      <div className="league-block__header">
-        <div>
-          <p className="home-kicker">League Insights</p>
-          <h2>Leaderboards</h2>
-        </div>
-      </div>
+      <SectionHeader className="league-block__header" kicker="League Insights" title="Leaderboards" />
 
       <div className="leaderboard-grid">
         {boards.map((board) => (

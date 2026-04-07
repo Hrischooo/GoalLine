@@ -120,8 +120,8 @@
 }
 
 .player-hover-card {
-  width: min(280px, calc(100vw - 24px));
-  padding: 14px;
+  width: min(240px, calc(100vw - 24px));
+  padding: 12px;
 }
 
 .player-hover-card__header {
@@ -140,27 +140,28 @@
 
 .player-hover-card__header span {
   color: var(--accent-cyan);
-  font-size: 0.82rem;
+  font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .player-hover-card__meta {
-  margin: 8px 0 0;
-  line-height: 1.45;
+  margin: 6px 0 0;
+  font-size: 0.84rem;
+  line-height: 1.38;
   overflow-wrap: anywhere;
 }
 
 .player-hover-card__stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 14px;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .player-hover-card__stats div {
-  padding: 10px 12px;
+  padding: 9px 10px;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -168,13 +169,13 @@
 
 .player-hover-card__stats span {
   display: block;
-  font-size: 0.72rem;
+  font-size: 0.66rem;
 }
 
 .player-hover-card__stats strong {
-  margin-top: 6px;
+  margin-top: 5px;
   color: var(--accent-lime);
-  font-size: 1rem;
+  font-size: 0.92rem;
 }
 
 .player-text-block {

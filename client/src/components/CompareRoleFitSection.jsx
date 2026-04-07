@@ -1,4 +1,5 @@
 import { formatStatValue } from '../utils/playerMetrics';
+import SectionHeader from './SectionHeader';
 
 function RoleColumn({ accent, roles = [], title }) {
   return (
@@ -27,12 +28,7 @@ function RoleColumn({ accent, roles = [], title }) {
 export default function CompareRoleFitSection({ leftMetrics, rightMetrics }) {
   return (
     <section className="compare-section">
-      <div className="compare-section__header">
-        <div>
-          <p className="home-kicker">Role Breakdown</p>
-          <h2>Top Role Fit Scores</h2>
-        </div>
-      </div>
+      <SectionHeader className="compare-section__header" kicker="Role Breakdown" title="Top Role Fit Scores" />
 
       <div className="compare-role-fit">
         <RoleColumn accent="left" roles={leftMetrics.topTacticalRoles} title={leftMetrics.primaryTacticalRoleLabel} />

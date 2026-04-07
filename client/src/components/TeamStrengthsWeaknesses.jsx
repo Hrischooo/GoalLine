@@ -1,3 +1,4 @@
+import SectionHeader from './SectionHeader';
 import { formatTextValue } from '../utils/playerMetrics';
 
 function PersonTile({ label, person }) {
@@ -13,12 +14,7 @@ function PersonTile({ label, person }) {
 export default function TeamStrengthsWeaknesses({ team }) {
   return (
     <section className="team-block">
-      <div className="team-block__header">
-        <div>
-          <p className="home-kicker">Club Insights</p>
-          <h2>Strengths & Leaders</h2>
-        </div>
-      </div>
+      <SectionHeader className="team-block__header" kicker="Club Insights" title="Strengths & Leaders" />
 
       <div className="team-insights-grid">
         <div className="team-insights-card">

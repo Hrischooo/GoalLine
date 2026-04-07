@@ -7,9 +7,9 @@
 }
 
 .compare-shell {
-  width: min(1280px, calc(100% - 32px));
+  width: min(1440px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 28px 0 56px;
+  padding: 28px 0 64px;
 }
 
 .compare-intro,
@@ -25,9 +25,51 @@
 .compare-intro,
 .compare-section {
   margin-top: 22px;
-  padding: 26px;
-  border-radius: 28px;
-  background: linear-gradient(135deg, rgba(15, 22, 54, 0.94), rgba(11, 16, 34, 0.96));
+  padding: 28px;
+  border-radius: 32px;
+  background:
+    radial-gradient(circle at top right, rgba(73, 230, 255, 0.08), transparent 26%),
+    linear-gradient(135deg, rgba(15, 22, 54, 0.96), rgba(11, 16, 34, 0.98));
+}
+
+.compare-intro__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.compare-mode-switch {
+  min-width: 340px;
+}
+
+.compare-subtabs__button {
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.compare-subtabs {
+  display: inline-flex;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.compare-subtabs__button:hover,
+.compare-subtabs__button--active {
+  transform: translateY(-1px);
+  background: rgba(73, 230, 255, 0.12);
+  border-color: rgba(73, 230, 255, 0.18);
+  color: var(--text-main);
 }
 
 .compare-selector-grid {
@@ -47,9 +89,11 @@
 
 .compare-selector {
   position: relative;
-  padding: 18px;
-  border-radius: 24px;
-  background: rgba(8, 13, 30, 0.82);
+  padding: 20px;
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(12, 18, 40, 0.94), rgba(9, 13, 27, 0.98)),
+    rgba(8, 13, 30, 0.82);
 }
 
 .compare-selector__header,
@@ -264,14 +308,192 @@
   color: #ffc0d1;
 }
 
+.compare-team-hero,
+.compare-team-hero-card,
+.compare-team-hero__center,
+.compare-team-card,
+.compare-team-mini-stat,
+.compare-priority-card {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
+}
+
+.compare-team-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px) minmax(0, 1fr);
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.compare-team-hero-card,
+.compare-team-hero__center,
+.compare-team-card {
+  padding: 20px;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top right, rgba(73, 230, 255, 0.06), transparent 28%),
+    linear-gradient(145deg, rgba(12, 19, 41, 0.98), rgba(18, 13, 37, 0.98));
+}
+
+.compare-team-hero-card__top,
+.compare-team-card__header,
+.compare-priority-card__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.compare-team-hero-card__top {
+  align-items: center;
+}
+
+.compare-team-hero-card__button {
+  margin-top: 18px;
+}
+
+.compare-team-hero-card h2,
+.compare-team-card h3 {
+  margin: 0;
+}
+
+.compare-team-hero__center {
+  display: grid;
+  align-content: center;
+  gap: 14px;
+}
+
+.compare-team-summary-grid,
+.compare-team-grid,
+.compare-priority-list {
+  display: grid;
+  gap: 16px;
+}
+
+.compare-team-summary-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 18px;
+}
+
+.compare-team-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 16px;
+}
+
+.compare-team-grid--compact {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.compare-team-mini-stat {
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.compare-team-mini-stat span,
+.compare-team-note,
+.compare-insight-item,
+.compare-priority-card p,
+.compare-priority-card small,
+.comparison-row__value small {
+  color: var(--text-muted);
+}
+
+.compare-team-mini-stat strong,
+.compare-priority-card strong {
+  display: block;
+  margin-top: 8px;
+}
+
+.compare-team-note {
+  margin: 16px 0 0;
+  line-height: 1.6;
+}
+
+.compare-insight-list {
+  display: grid;
+  gap: 10px;
+}
+
+.compare-insight-item {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  line-height: 1.6;
+}
+
+.compare-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.compare-team-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  letter-spacing: 0.04em;
+}
+
+.compare-team-pill--good {
+  border-color: rgba(24, 210, 187, 0.24);
+  background: rgba(24, 210, 187, 0.12);
+  color: #92ffe9;
+}
+
+.compare-team-pill--warn {
+  border-color: rgba(255, 214, 102, 0.26);
+  background: rgba(255, 214, 102, 0.1);
+  color: #ffd666;
+}
+
+.compare-team-pill--risk {
+  border-color: rgba(255, 118, 118, 0.26);
+  background: rgba(255, 118, 118, 0.12);
+  color: #ffb0b0;
+}
+
+.compare-subtabs {
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.compare-priority-list {
+  margin-top: 16px;
+}
+
+.compare-priority-card {
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.compare-priority-card p,
+.compare-priority-card small {
+  margin: 10px 0 0;
+  line-height: 1.6;
+}
+
 .compare-hero-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(220px, 280px) minmax(0, 1fr);
   gap: 18px;
   margin-top: 24px;
-  padding: 22px;
-  border-radius: 30px;
-  background: linear-gradient(135deg, rgba(12, 19, 41, 0.96), rgba(18, 13, 37, 0.96));
+  padding: 24px;
+  border-radius: 34px;
+  background:
+    radial-gradient(circle at top right, rgba(73, 230, 255, 0.08), transparent 24%),
+    linear-gradient(135deg, rgba(12, 19, 41, 0.98), rgba(18, 13, 37, 0.98));
 }
 
 .compare-hero-player,
@@ -743,6 +965,9 @@
 @media (max-width: 1120px) {
   .compare-selector-grid,
   .compare-hero-card,
+  .compare-team-hero,
+  .compare-team-summary-grid,
+  .compare-team-grid--compact,
   .compare-role-fit,
   .compare-radar--overlay,
   .compare-radar--split {
@@ -753,6 +978,14 @@
     padding-top: 0;
   }
 
+  .compare-intro__top {
+    flex-direction: column;
+  }
+
+  .compare-mode-switch {
+    width: 100%;
+  }
+
   .compare-selector__filters {
     grid-template-columns: 1fr;
   }
@@ -760,14 +993,17 @@
 
 @media (max-width: 760px) {
   .compare-shell {
-    width: min(100% - 24px, 1280px);
+    width: min(100% - 24px, 1440px);
     padding-top: 20px;
   }
 
   .compare-section,
   .compare-intro,
   .compare-hero-card,
-  .compare-selector {
+  .compare-selector,
+  .compare-team-hero-card,
+  .compare-team-hero__center,
+  .compare-team-card {
     padding: 20px;
   }
 
@@ -797,6 +1033,15 @@
   .compare-stats-toolbar {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .compare-subtabs {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .compare-subtabs__button {
+    flex: 1 1 180px;
   }
 
   .compare-scout-row__value--right {
