@@ -1,18 +1,19 @@
 services:
   db:
-    image: postgres:15
+    image: postgres:18
     container_name: goaline_db
     restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres123
-      POSTGRES_DB: goaline
+      POSTGRES_DB: GoalLine
     ports:
       - "5432:5432"
     volumes:
+      - pgdata:/var/lib/postgresql
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d goaline"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d GoalLine"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -24,7 +25,7 @@ services:
     ports:
       - "5000:5000"
     environment:
-      DATABASE_URL: postgresql://postgres:postgres123@db:5432/goaline
+      DATABASE_URL: postgresql://postgres:postgres123@db:5432/GoalLine
       PORT: 5000
     depends_on:
       db:
@@ -38,3 +39,6 @@ services:
       - "5173:5173"
     depends_on:
       - server
+
+volumes:
+  pgdata:

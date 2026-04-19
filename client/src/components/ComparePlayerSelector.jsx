@@ -8,13 +8,6 @@ import { getRecentPlayers, rememberRecentPlayer } from '../utils/recentPlayers';
 
 const MAX_RESULTS = 8;
 const SEARCH_DEBOUNCE_MS = 160;
-const POSITION_FILTERS = [
-  { value: 'all', label: 'All' },
-  { value: 'goalkeeper', label: 'GK' },
-  { value: 'defender', label: 'DF' },
-  { value: 'midfielder', label: 'MF' },
-  { value: 'forward', label: 'FW' }
-];
 
 function useDebouncedValue(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -102,8 +95,6 @@ export default function ComparePlayerSelector({ label, options, selectedPlayer, 
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const [leagueFilter, setLeagueFilter] = useState('all');
-  const [positionFilter, setPositionFilter] = useState('all');
   const [recentVersion, setRecentVersion] = useState(0);
   const containerRef = useRef(null);
   const debouncedQuery = useDebouncedValue(query, SEARCH_DEBOUNCE_MS);
@@ -128,44 +119,20 @@ export default function ComparePlayerSelector({ label, options, selectedPlayer, 
     };
   }, []);
 
-  const leagueOptions = useMemo(
-    () =>
-      Array.from(new Map(options.map((option) => [option.leagueId, { value: option.leagueId, label: option.leagueName }])).values()).sort((left, right) =>
-        left.label.localeCompare(right.label)
-      ),
-    [options]
-  );
-
-  const filteredOptions = useMemo(
-    () =>
-      options.filter((option) => {
-        if (leagueFilter !== 'all' && option.leagueId !== leagueFilter) {
-          return false;
-        }
-
-        if (positionFilter !== 'all' && option.positionFamily !== positionFilter) {
-          return false;
-        }
-
-        return true;
-      }),
-    [leagueFilter, options, positionFilter]
-  );
-
   const recentOptions = useMemo(() => {
-    const optionMap = new Map(filteredOptions.map((option) => [option.id, option]));
+    const optionMap = new Map(options.map((option) => [option.id, option]));
     return getRecentPlayers()
       .map((entry) => optionMap.get(entry.id))
       .filter(Boolean)
       .slice(0, 5);
-  }, [filteredOptions, recentVersion]);
+  }, [options, recentVersion]);
 
   const topPlayers = useMemo(
     () =>
-      [...filteredOptions]
+      [...options]
         .sort((left, right) => right.popularity - left.popularity || left.player.player.localeCompare(right.player.player))
         .slice(0, 6),
-    [filteredOptions]
+    [options]
   );
 
   const searchResults = useMemo(() => {
@@ -173,7 +140,7 @@ export default function ComparePlayerSelector({ label, options, selectedPlayer, 
       return [];
     }
 
-    return filteredOptions
+    return options
       .map((option) => ({
         ...option,
         nameNormalized: normalizeString(option.name),
@@ -185,7 +152,7 @@ export default function ComparePlayerSelector({ label, options, selectedPlayer, 
       .filter((option) => option.score > 0)
       .sort((left, right) => right.score - left.score || right.popularity - left.popularity || left.name.localeCompare(right.name))
       .slice(0, MAX_RESULTS);
-  }, [filteredOptions, normalizedQuery]);
+  }, [options, normalizedQuery]);
 
   const sections = useMemo(() => {
     if (normalizedQuery) {
@@ -316,34 +283,8 @@ export default function ComparePlayerSelector({ label, options, selectedPlayer, 
         />
       </label>
 
-      <div className="compare-selector__filters">
-        <label className="compare-selector__filter">
-          <span>League</span>
-          <select className="compare-selector__select" onChange={(event) => setLeagueFilter(event.target.value)} value={leagueFilter}>
-            <option value="all">All Leagues</option>
-            {leagueOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <div className="compare-selector__filter">
-          <span>Position</span>
-          <div className="compare-selector__position-filters">
-            {POSITION_FILTERS.map((option) => (
-              <button
-                className={`compare-selector__position-chip${positionFilter === option.value ? ' compare-selector__position-chip--active' : ''}`}
-                key={option.value}
-                onClick={() => setPositionFilter(option.value)}
-                type="button"
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
+      <div className="compare-selector__pool-note">
+        <span>{options.length} players in the filtered pool</span>
       </div>
 
       {isOpen ? (

@@ -351,7 +351,7 @@ h1 {
 
 .gl-segmented--stretch {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
 }
 
 .gl-segmented--compact {
@@ -362,6 +362,7 @@ h1 {
 .gl-segmented__button {
   display: grid;
   gap: 4px;
+  min-width: 0;
   min-height: 44px;
   padding: 10px 16px;
   border: 1px solid transparent;
@@ -394,12 +395,14 @@ h1 {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
 }
 
 .gl-segmented__meta {
   color: var(--text-muted);
   font-size: 0.72rem;
   line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .section-header {

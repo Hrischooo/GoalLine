@@ -90,6 +90,8 @@
   position: relative;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 14px;
   margin-top: 20px;
   padding: 10px 12px;
@@ -101,12 +103,22 @@
 
 .player-section-nav__tabs {
   flex: 1;
+  min-width: 0;
 }
 
 .player-section-nav__compare {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid rgba(73, 230, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(73, 230, 255, 0.08);
   margin-left: auto;
   color: var(--text-main);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .reports-view {
@@ -1652,6 +1664,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+  align-items: start;
 }
 
 .scouting-insights__column {
@@ -1716,6 +1729,7 @@
 .insight-subcard {
   display: grid;
   gap: 14px;
+  align-content: start;
 }
 
 .insight-subcard__header,

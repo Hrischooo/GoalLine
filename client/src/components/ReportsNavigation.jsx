@@ -3,6 +3,7 @@ import SegmentedControl from './SegmentedControl';
 const VIEW_OPTIONS = [
   { id: 'overview', label: 'Overview' },
   { id: 'analysis', label: 'Analysis' },
+  { id: 'report', label: 'Reports' },
   { id: 'similar', label: 'Similar Players' }
 ];
 

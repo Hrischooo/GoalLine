@@ -38,7 +38,7 @@ function PriorityCard({ profile }) {
   );
 }
 
-export default function TeamComparisonRecruitment({ insights = [], leftProfile, rightProfile }) {
+export default function TeamComparisonRecruitment({ controls, insights = [], leftProfile, rightProfile }) {
   return (
     <section className="compare-section">
       <SectionHeader className="compare-section__header" kicker="Recruitment View" title="Squad Building Pressure Points" />
@@ -53,7 +53,7 @@ export default function TeamComparisonRecruitment({ insights = [], leftProfile, 
           <h3>Structural Comparison</h3>
         </div>
         <div className="compare-insight-list">
-          {insights.map((insight) => (
+          {insights.slice(0, controls.showOnlyDifferences ? 2 : 4).map((insight) => (
             <p className="compare-insight-item" key={insight}>
               {insight}
             </p>

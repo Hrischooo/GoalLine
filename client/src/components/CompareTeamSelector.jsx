@@ -34,7 +34,6 @@ export default function CompareTeamSelector({ label, onSelect, options, selected
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const [leagueFilter, setLeagueFilter] = useState('all');
   const containerRef = useRef(null);
   const normalizedQuery = normalizeString(query);
   const selectedOption = useMemo(() => options.find((option) => option.id === selectedValue) || null, [options, selectedValue]);
@@ -55,22 +54,9 @@ export default function CompareTeamSelector({ label, onSelect, options, selected
     return () => document.removeEventListener('pointerdown', handlePointerDown);
   }, []);
 
-  const leagueOptions = useMemo(
-    () =>
-      Array.from(new Map(options.map((option) => [option.league, option.league])).values())
-        .filter(Boolean)
-        .sort((left, right) => left.localeCompare(right)),
-    [options]
-  );
-
-  const filteredOptions = useMemo(
-    () => options.filter((option) => leagueFilter === 'all' || option.league === leagueFilter),
-    [leagueFilter, options]
-  );
-
   const popularOptions = useMemo(
-    () => [...filteredOptions].sort((left, right) => right.popularity - left.popularity || left.name.localeCompare(right.name)).slice(0, 6),
-    [filteredOptions]
+    () => [...options].sort((left, right) => right.popularity - left.popularity || left.name.localeCompare(right.name)).slice(0, 6),
+    [options]
   );
 
   const searchResults = useMemo(() => {
@@ -78,7 +64,7 @@ export default function CompareTeamSelector({ label, onSelect, options, selected
       return [];
     }
 
-    return filteredOptions
+    return options
       .map((option) => ({
         ...option,
         score: scoreResult(option, normalizedQuery)
@@ -86,7 +72,7 @@ export default function CompareTeamSelector({ label, onSelect, options, selected
       .filter((option) => option.score > 0)
       .sort((left, right) => right.score - left.score || right.popularity - left.popularity || left.name.localeCompare(right.name))
       .slice(0, MAX_RESULTS);
-  }, [filteredOptions, normalizedQuery]);
+  }, [options, normalizedQuery]);
 
   const visibleOptions = normalizedQuery ? searchResults : popularOptions;
 
@@ -183,18 +169,8 @@ export default function CompareTeamSelector({ label, onSelect, options, selected
         />
       </label>
 
-      <div className="compare-selector__filters">
-        <label className="compare-selector__filter">
-          <span>League</span>
-          <select className="compare-selector__select" onChange={(event) => setLeagueFilter(event.target.value)} value={leagueFilter}>
-            <option value="all">All Leagues</option>
-            {leagueOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </label>
+      <div className="compare-selector__pool-note">
+        <span>{options.length} teams in the filtered pool</span>
       </div>
 
       {isOpen ? (

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import ClubBadge from './ClubBadge';
 import SegmentedControl from './SegmentedControl';
 import TeamComparisonDepth from './TeamComparisonDepth';
@@ -55,11 +55,35 @@ function TeamHeroCard({ label, onOpenTeam, profile }) {
   );
 }
 
-export default function TeamComparisonDashboard({ leftTeam, onNavigate, rightTeam, teams = [] }) {
+export default function TeamComparisonDashboard({ controls, leftTeam, onNavigate, rightTeam, teams = [] }) {
   const [activeTab, setActiveTab] = useState('overview');
   const leftProfile = useMemo(() => buildTeamComparisonProfile(leftTeam, teams), [leftTeam, teams]);
   const rightProfile = useMemo(() => buildTeamComparisonProfile(rightTeam, teams), [rightTeam, teams]);
   const insights = useMemo(() => buildTeamComparisonInsights(leftProfile, rightProfile), [leftProfile, rightProfile]);
+  const heroInsights = useMemo(() => {
+    if (controls.focusArea === 'tactical') {
+      return insights.tactical;
+    }
+
+    if (controls.focusArea === 'depth') {
+      return insights.depth;
+    }
+
+    if (controls.focusArea === 'recruitment') {
+      return insights.recruitment;
+    }
+
+    return insights.headline;
+  }, [controls.focusArea, insights]);
+
+  useEffect(() => {
+    if (controls.focusArea === 'balanced') {
+      setActiveTab('overview');
+      return;
+    }
+
+    setActiveTab(controls.focusArea);
+  }, [controls.focusArea]);
 
   return (
     <>
@@ -69,8 +93,11 @@ export default function TeamComparisonDashboard({ leftTeam, onNavigate, rightTea
         <div className="compare-team-hero__center">
           <p className="home-kicker">Scout Read</p>
           <h2>Mirror the current XI, the depth behind it, and the next recruitment pressure points.</h2>
+          <p className="compare-team-note">
+            {controls.showOnlyDifferences ? 'Showing the clearest structural edges only.' : 'Full structural read is active.'}
+          </p>
           <div className="compare-insight-list">
-            {insights.headline.map((insight) => (
+            {heroInsights.slice(0, controls.showOnlyDifferences ? 2 : 3).map((insight) => (
               <p className="compare-insight-item" key={insight}>
                 {insight}
               </p>
@@ -90,11 +117,11 @@ export default function TeamComparisonDashboard({ leftTeam, onNavigate, rightTea
         options={SECTION_TABS}
       />
 
-      {activeTab === 'overview' ? <TeamComparisonOverview insights={insights.overview} leftProfile={leftProfile} rightProfile={rightProfile} /> : null}
-      {activeTab === 'tactical' ? <TeamComparisonTactical insights={insights.tactical} leftProfile={leftProfile} rightProfile={rightProfile} /> : null}
-      {activeTab === 'depth' ? <TeamComparisonDepth insights={insights.depth} leftProfile={leftProfile} rightProfile={rightProfile} /> : null}
+      {activeTab === 'overview' ? <TeamComparisonOverview controls={controls} insights={insights.overview} leftProfile={leftProfile} rightProfile={rightProfile} /> : null}
+      {activeTab === 'tactical' ? <TeamComparisonTactical controls={controls} insights={insights.tactical} leftProfile={leftProfile} rightProfile={rightProfile} /> : null}
+      {activeTab === 'depth' ? <TeamComparisonDepth controls={controls} insights={insights.depth} leftProfile={leftProfile} rightProfile={rightProfile} /> : null}
       {activeTab === 'recruitment' ? (
-        <TeamComparisonRecruitment insights={insights.recruitment} leftProfile={leftProfile} rightProfile={rightProfile} />
+        <TeamComparisonRecruitment controls={controls} insights={insights.recruitment} leftProfile={leftProfile} rightProfile={rightProfile} />
       ) : null}
     </>
   );

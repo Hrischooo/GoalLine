@@ -35,7 +35,7 @@ function getStrengthTags(metrics = {}) {
 
 function getPopoverTitle(slot = {}, player = {}) {
   return slot.slotLabel && player.metrics?.exactPosition && slot.slotLabel !== player.metrics.exactPosition
-    ? `${slot.slotLabel} slot · ${player.metrics.exactPosition}`
+    ? `${slot.slotLabel} slot / ${player.metrics.exactPosition}`
     : slot.slotLabel || player.metrics?.exactPosition || 'Lineup slot';
 }
 
@@ -67,7 +67,7 @@ export default function LineupPlayerNode({ onOpenPlayer, slot, variant = 'full' 
           <strong className="lineup-node__name">{displayName}</strong>
           <span className="lineup-node__meta">
             {slot.slotLabel}
-            {isMini ? '' : ` · ${formatTextValue(metrics.primaryTacticalRoleLabel || metrics.exactPosition, 'Role')}`}
+            {isMini ? '' : ` / ${formatTextValue(metrics.primaryTacticalRoleLabel || metrics.exactPosition, 'Role')}`}
           </span>
         </span>
 

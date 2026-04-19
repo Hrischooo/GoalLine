@@ -1,9 +1,9 @@
 import SectionHeader from './SectionHeader';
 import { buildStyleComparisonRows } from '../utils/teamComparisonInsights';
 
-function TacticalBarRow({ label, leftValue, rightValue, winner }) {
+function TacticalBarRow({ highlight, label, leftValue, rightValue, winner }) {
   return (
-    <div className="compare-scout-row">
+    <div className={`compare-scout-row${highlight ? ' compare-scout-row--spotlight' : ''}`}>
       <div className={`compare-scout-row__value compare-scout-row__value--left${winner === 'left' ? ' compare-scout-row__value--winner' : ''}`}>
         <strong>{leftValue}</strong>
       </div>
@@ -61,8 +61,14 @@ function RoleCoverageCard({ profile }) {
   );
 }
 
-export default function TeamComparisonTactical({ insights = [], leftProfile, rightProfile }) {
-  const styleRows = buildStyleComparisonRows(leftProfile, rightProfile);
+export default function TeamComparisonTactical({ controls, insights = [], leftProfile, rightProfile }) {
+  const styleRows = buildStyleComparisonRows(leftProfile, rightProfile)
+    .map((row) => ({
+      ...row,
+      delta: Math.abs(Number(row.leftValue) - Number(row.rightValue))
+    }))
+    .filter((row) => !controls.showOnlyDifferences || row.winner);
+  const biggestDelta = styleRows.reduce((best, row) => Math.max(best, row.delta), 0);
 
   return (
     <section className="compare-section">
@@ -70,9 +76,20 @@ export default function TeamComparisonTactical({ insights = [], leftProfile, rig
 
       <article className="comparison-card">
         <div className="comparison-card__rows comparison-card__rows--scouting">
-          {styleRows.map((row) => (
-            <TacticalBarRow key={row.key} label={row.label} leftValue={row.leftValue} rightValue={row.rightValue} winner={row.winner} />
-          ))}
+          {styleRows.length ? (
+            styleRows.map((row) => (
+              <TacticalBarRow
+                highlight={controls.highlightBiggestAdvantage && row.delta === biggestDelta && biggestDelta > 0}
+                key={row.key}
+                label={row.label}
+                leftValue={row.leftValue}
+                rightValue={row.rightValue}
+                winner={row.winner}
+              />
+            ))
+          ) : (
+            <p className="compare-message">The current threshold removes the tactical differences here.</p>
+          )}
         </div>
       </article>
 
@@ -142,7 +159,7 @@ export default function TeamComparisonTactical({ insights = [], leftProfile, rig
           <h3>Tactical Read</h3>
         </div>
         <div className="compare-insight-list">
-          {insights.map((insight) => (
+          {insights.slice(0, controls.showOnlyDifferences ? 2 : 4).map((insight) => (
             <p className="compare-insight-item" key={insight}>
               {insight}
             </p>

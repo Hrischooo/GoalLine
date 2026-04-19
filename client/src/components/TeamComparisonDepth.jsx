@@ -1,11 +1,11 @@
 import SectionHeader from './SectionHeader';
 import { getComparisonWinner } from '../utils/teamComparisonInsights';
 
-function DepthLineRow({ label, leftLine, rightLine }) {
+function DepthLineRow({ highlight, label, leftLine, rightLine }) {
   const winner = getComparisonWinner(leftLine.stabilityScore, rightLine.stabilityScore, 2);
 
   return (
-    <div className="comparison-row">
+    <div className={`comparison-row${highlight ? ' comparison-row--spotlight' : ''}`}>
       <div className={`comparison-row__value${winner === 'left' ? ' comparison-row__value--winner' : ''}`}>
         <strong>{leftLine.stabilityScore}</strong>
         <small>
@@ -55,8 +55,25 @@ function RiskCard({ profile }) {
   );
 }
 
-export default function TeamComparisonDepth({ insights = [], leftProfile, rightProfile }) {
+export default function TeamComparisonDepth({ controls, insights = [], leftProfile, rightProfile }) {
   const lines = ['attack', 'midfield', 'defense', 'goalkeeper'];
+  const lineRows = lines
+    .map((line) => {
+      const leftLine = leftProfile.squadHealth.lineDepth.find((entry) => entry.line === line);
+      const rightLine = rightProfile.squadHealth.lineDepth.find((entry) => entry.line === line);
+      const winner = getComparisonWinner(leftLine.stabilityScore, rightLine.stabilityScore, 2);
+
+      return {
+        line,
+        label: line === 'goalkeeper' ? 'Goalkeeper' : line.charAt(0).toUpperCase() + line.slice(1),
+        leftLine,
+        rightLine,
+        winner,
+        delta: Math.abs((leftLine?.stabilityScore || 0) - (rightLine?.stabilityScore || 0))
+      };
+    })
+    .filter((row) => !controls.showOnlyDifferences || row.winner);
+  const biggestDelta = lineRows.reduce((best, row) => Math.max(best, row.delta), 0);
 
   return (
     <section className="compare-section">
@@ -64,14 +81,19 @@ export default function TeamComparisonDepth({ insights = [], leftProfile, rightP
 
       <article className="comparison-card">
         <div className="comparison-card__rows">
-          {lines.map((line) => (
-            <DepthLineRow
-              key={line}
-              label={line === 'goalkeeper' ? 'Goalkeeper' : line.charAt(0).toUpperCase() + line.slice(1)}
-              leftLine={leftProfile.squadHealth.lineDepth.find((entry) => entry.line === line)}
-              rightLine={rightProfile.squadHealth.lineDepth.find((entry) => entry.line === line)}
-            />
-          ))}
+          {lineRows.length ? (
+            lineRows.map((row) => (
+              <DepthLineRow
+                highlight={controls.highlightBiggestAdvantage && row.delta === biggestDelta && biggestDelta > 0}
+                key={row.line}
+                label={row.label}
+                leftLine={row.leftLine}
+                rightLine={row.rightLine}
+              />
+            ))
+          ) : (
+            <p className="compare-message">The current threshold removes the depth differences here.</p>
+          )}
         </div>
       </article>
 
@@ -141,7 +163,7 @@ export default function TeamComparisonDepth({ insights = [], leftProfile, rightP
           <h3>Depth Read</h3>
         </div>
         <div className="compare-insight-list">
-          {insights.map((insight) => (
+          {insights.slice(0, controls.showOnlyDifferences ? 2 : 4).map((insight) => (
             <p className="compare-insight-item" key={insight}>
               {insight}
             </p>

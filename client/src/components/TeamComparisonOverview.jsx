@@ -27,11 +27,11 @@ function getValue(profile, row) {
   return profile.strength[row.key];
 }
 
-function ComparisonRow({ label, leftValue, rightValue }) {
+function ComparisonRow({ highlight, label, leftValue, rightValue }) {
   const winner = getComparisonWinner(leftValue, rightValue, 1.5);
 
   return (
-    <div className="comparison-row">
+    <div className={`comparison-row${highlight ? ' comparison-row--spotlight' : ''}`}>
       <strong className={`comparison-row__value${winner === 'left' ? ' comparison-row__value--winner' : ''}`}>{leftValue}</strong>
       <div className="comparison-row__label">
         <span>{label}</span>
@@ -70,21 +70,44 @@ function LeagueContextCard({ profile }) {
   );
 }
 
-export default function TeamComparisonOverview({ insights = [], leftProfile, rightProfile }) {
+export default function TeamComparisonOverview({ controls, insights = [], leftProfile, rightProfile }) {
+  const visibleRows = OVERVIEW_ROWS
+    .map((row) => {
+      const leftValue = getValue(leftProfile, row);
+      const rightValue = getValue(rightProfile, row);
+      const delta = Math.abs(Number(leftValue) - Number(rightValue));
+      const winner = getComparisonWinner(leftValue, rightValue, 1.5);
+
+      return {
+        ...row,
+        leftValue,
+        rightValue,
+        delta,
+        winner
+      };
+    })
+    .filter((row) => !controls.showOnlyDifferences || row.winner);
+  const biggestDelta = visibleRows.reduce((best, row) => Math.max(best, row.delta), 0);
+
   return (
     <section className="compare-section">
       <SectionHeader className="compare-section__header" kicker="Overview" title="Current Level & League Context" />
 
       <div className="comparison-card">
         <div className="comparison-card__rows">
-          {OVERVIEW_ROWS.map((row) => (
-            <ComparisonRow
-              key={row.key}
-              label={row.label}
-              leftValue={getValue(leftProfile, row)}
-              rightValue={getValue(rightProfile, row)}
-            />
-          ))}
+          {visibleRows.length ? (
+            visibleRows.map((row) => (
+              <ComparisonRow
+                highlight={controls.highlightBiggestAdvantage && row.delta === biggestDelta && biggestDelta > 0}
+                key={row.key}
+                label={row.label}
+                leftValue={row.leftValue}
+                rightValue={row.rightValue}
+              />
+            ))
+          ) : (
+            <p className="compare-message">The current threshold removes the overview differences here.</p>
+          )}
         </div>
       </div>
 
@@ -156,7 +179,7 @@ export default function TeamComparisonOverview({ insights = [], leftProfile, rig
           <h3>Scout Summary</h3>
         </div>
         <div className="compare-insight-list">
-          {insights.map((insight) => (
+          {insights.slice(0, controls.showOnlyDifferences ? 2 : 3).map((insight) => (
             <p className="compare-insight-item" key={insight}>
               {insight}
             </p>

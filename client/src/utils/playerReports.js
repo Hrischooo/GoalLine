@@ -318,10 +318,54 @@ function buildCardTone(metricRows = []) {
   return { label: 'Balanced', tone: 'neutral' };
 }
 
+function buildFallbackAnalyticsCard(metrics, peerContext) {
+  const fallbackDefinitions = [
+    { key: 'attacking', label: 'Attack', value: toNumber(metrics.categoryScores?.attacking) },
+    { key: 'playmaking', label: 'Creativity', value: toNumber(metrics.categoryScores?.playmaking) },
+    { key: 'possession', label: 'Possession', value: toNumber(metrics.categoryScores?.possession) },
+    { key: 'defending', label: 'Defending', value: toNumber(metrics.categoryScores?.defending) }
+  ].filter((entry) => Number.isFinite(entry.value));
+
+  const metricRows = fallbackDefinitions.map((definition) => {
+    const peerValues = peerContext.peerSnapshots
+      .map((entry) => toNumber(entry.metrics?.categoryScores?.[definition.key]))
+      .filter((value) => Number.isFinite(value));
+    const averageValue = peerValues.length ? peerValues.reduce((sum, value) => sum + value, 0) / peerValues.length : definition.value;
+    const rangeValues = [...peerValues, definition.value, averageValue];
+    const delta = definition.value - averageValue;
+
+    return {
+      key: definition.key,
+      label: definition.label,
+      delta,
+      deltaLabel: getDeltaLabel(delta),
+      status: delta > 0.01 ? 'positive' : delta < -0.01 ? 'negative' : 'neutral',
+      playerDisplay: formatDisplayValue(definition.value),
+      averageDisplay: formatDisplayValue(averageValue),
+      playerRadarValue: scaleRadarValue(definition.value, Math.min(...rangeValues), Math.max(...rangeValues)),
+      averageRadarValue: scaleRadarValue(averageValue, Math.min(...rangeValues), Math.max(...rangeValues)),
+      percentile: calculatePercentile([...peerValues, definition.value], definition.value)
+    };
+  });
+
+  if (!metricRows.length) {
+    return null;
+  }
+
+  return {
+    key: 'profile-balance',
+    title: 'Profile Balance',
+    tone: buildCardTone(metricRows),
+    insight: 'Fallback profile view built from GoalLine category scores when the position-specific report pack is too thin.',
+    metrics: metricRows,
+    radarAxes: metricRows.map((metric) => ({ key: metric.key, label: metric.label, value: metric.playerRadarValue })),
+    averageAxes: metricRows.map((metric) => ({ key: `${metric.key}-avg`, label: metric.label, value: metric.averageRadarValue }))
+  };
+}
+
 function buildAnalyticsCards(metrics, peerContext) {
   const playerMetricMap = buildMetricMap(metrics);
-
-  return getAnalyticsCardConfigs(metrics.positionModel)
+  const analyticsCards = getAnalyticsCardConfigs(metrics.positionModel)
     .map((card) => {
       const metricRows = card.metrics.map((metric) => buildMetricComparison(metric, playerMetricMap, peerContext.peerSnapshots)).filter(Boolean);
 
@@ -341,6 +385,13 @@ function buildAnalyticsCards(metrics, peerContext) {
     })
     .filter(Boolean)
     .slice(0, 3);
+
+  if (analyticsCards.length) {
+    return analyticsCards;
+  }
+
+  const fallbackCard = buildFallbackAnalyticsCard(metrics, peerContext);
+  return fallbackCard ? [fallbackCard] : [];
 }
 
 function findCompetitionRows(players = [], player, ratingIndex = {}) {

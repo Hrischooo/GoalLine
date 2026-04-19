@@ -3,6 +3,7 @@ import InfoTooltip from './InfoTooltip';
 import SectionHeader from './SectionHeader';
 import { buildScoutingComparison, formatScoutingMetricValue } from '../utils/playerMetrics';
 import { buildBasicComparison, formatBasicMetricValue } from '../utils/playerViews';
+import { getRoleFocusSections } from '../utils/compareFiltersConfig';
 
 const STORAGE_KEY = 'goalline-compare-metric-mode';
 
@@ -11,7 +12,7 @@ function MetricRow({ row }) {
   const rightWidth = `${Math.max(0, Math.min(row.rightMetric.percentile, 100))}%`;
 
   return (
-    <div className="compare-scout-row" key={row.key}>
+    <div className={`compare-scout-row${row.isBiggestEdge ? ' compare-scout-row--spotlight' : ''}`} key={row.key}>
       <div
         className={`compare-scout-row__value compare-scout-row__value--left${
           row.winner === 'left' ? ' compare-scout-row__value--winner' : row.winner === 'right' ? ' compare-scout-row__value--loser' : ''
@@ -51,7 +52,7 @@ function MetricRow({ row }) {
 
 function BasicMetricRow({ row }) {
   return (
-    <div className="compare-scout-row" key={row.key}>
+    <div className={`compare-scout-row${row.isBiggestEdge ? ' compare-scout-row--spotlight' : ''}`} key={row.key}>
       <div
         className={`compare-scout-row__value compare-scout-row__value--left${
           row.winner === 'left' ? ' compare-scout-row__value--winner' : row.winner === 'right' ? ' compare-scout-row__value--loser' : ''
@@ -87,7 +88,36 @@ function BasicMetricRow({ row }) {
   );
 }
 
-export default function CompareStatsSection({ leftMetrics, rightMetrics, leftPlayer, rightPlayer }) {
+function getBasicRowDelta(row) {
+  const left = Number(row.leftValue) || 0;
+  const right = Number(row.rightValue) || 0;
+  return Math.abs(left - right) / Math.max(Math.abs(left), Math.abs(right), 1);
+}
+
+function getAdvancedRowDelta(row, samePositionFamily) {
+  const leftValue = samePositionFamily ? Number(row.leftMetric?.value) || 0 : Number(row.leftMetric?.percentile) || 0;
+  const rightValue = samePositionFamily ? Number(row.rightMetric?.value) || 0 : Number(row.rightMetric?.percentile) || 0;
+
+  return Math.abs(leftValue - rightValue) / Math.max(Math.abs(leftValue), Math.abs(rightValue), samePositionFamily ? 1 : 100);
+}
+
+function getSectionPriorityKeys(comparison, controls, leftMetrics, rightMetrics) {
+  if (controls.comparisonLens === 'role') {
+    return getRoleFocusSections(leftMetrics?.primaryTacticalRoleLabel || rightMetrics?.primaryTacticalRoleLabel, leftMetrics?.positionModel || rightMetrics?.positionModel);
+  }
+
+  if (controls.comparisonLens === 'position') {
+    return getRoleFocusSections('', leftMetrics?.positionModel || rightMetrics?.positionModel);
+  }
+
+  if (controls.showOnlyKeyCategories) {
+    return [leftMetrics?.defaultScoutingSection, rightMetrics?.defaultScoutingSection].filter(Boolean);
+  }
+
+  return [];
+}
+
+export default function CompareStatsSection({ controls, leftMetrics, rightMetrics, leftPlayer, rightPlayer }) {
   const [metricMode, setMetricMode] = useState(() => {
     if (typeof window === 'undefined') {
       return 'advanced';
@@ -97,7 +127,48 @@ export default function CompareStatsSection({ leftMetrics, rightMetrics, leftPla
   });
   const advancedComparison = useMemo(() => buildScoutingComparison(leftMetrics, rightMetrics), [leftMetrics, rightMetrics]);
   const basicComparison = useMemo(() => buildBasicComparison(leftPlayer, leftMetrics, rightPlayer, rightMetrics), [leftMetrics, leftPlayer, rightMetrics, rightPlayer]);
-  const comparison = metricMode === 'advanced' ? advancedComparison : basicComparison;
+  const rawComparison = metricMode === 'advanced' ? advancedComparison : basicComparison;
+  const comparison = useMemo(() => {
+    const focusKeys = new Set(getSectionPriorityKeys(rawComparison, controls, leftMetrics, rightMetrics));
+    const filteredSections = rawComparison.sections
+      .map((section) => {
+        const rows = section.rows
+          .map((row) => ({
+            ...row,
+            rowDelta:
+              metricMode === 'advanced'
+                ? getAdvancedRowDelta(row, rawComparison.samePositionFamily)
+                : getBasicRowDelta(row)
+          }))
+          .filter((row) => !controls.showOnlyDifferences || (row.winner !== 'tie' && row.rowDelta >= 0.06));
+
+        return rows.length ? { ...section, rows } : null;
+      })
+      .filter(Boolean);
+    const prioritizedSections =
+      controls.showOnlyKeyCategories && focusKeys.size
+        ? filteredSections.filter((section) => focusKeys.has(section.key))
+        : controls.showOnlyKeyCategories
+          ? filteredSections.slice(0, 2)
+          : filteredSections;
+    const maxDelta = prioritizedSections.reduce(
+      (best, section) => Math.max(best, ...section.rows.map((row) => row.rowDelta || 0)),
+      0
+    );
+
+    return {
+      ...rawComparison,
+      sections: prioritizedSections.map((section) => ({
+        ...section,
+        rows: section.rows.map((row) => ({
+          ...row,
+          isBiggestEdge: controls.highlightBiggestAdvantage && maxDelta > 0 && row.rowDelta >= maxDelta - 0.01
+        }))
+      })),
+      defaultOpenSection:
+        prioritizedSections.find((section) => section.key === rawComparison.defaultOpenSection)?.key || prioritizedSections[0]?.key || null
+    };
+  }, [controls, leftMetrics, metricMode, rawComparison, rightMetrics]);
   const [openSections, setOpenSections] = useState([]);
 
   useEffect(() => {
@@ -116,7 +187,11 @@ export default function CompareStatsSection({ leftMetrics, rightMetrics, leftPla
     return (
       <section className="compare-section">
         <SectionHeader className="compare-section__header" kicker="Scouting Comparison" title="Advanced Metric Matchup" />
-        <p className="compare-message">These players do not share enough position-safe advanced metrics for a direct scouting comparison.</p>
+        <p className="compare-message">
+          {controls.showOnlyDifferences || controls.showOnlyKeyCategories
+            ? 'The active compare controls trimmed this view to zero rows. Relax one of the controls to see the full matchup again.'
+            : 'These players do not share enough position-safe advanced metrics for a direct scouting comparison.'}
+        </p>
       </section>
     );
   }
@@ -163,6 +238,14 @@ export default function CompareStatsSection({ leftMetrics, rightMetrics, leftPla
           {metricMode === 'advanced'
             ? 'Mixed positions detected. Bar lengths use role-relative percentiles to keep the comparison honest.'
             : 'Mixed positions detected. Only shared position-safe basic stats are shown.'}
+        </p>
+      ) : null}
+      {controls.showOnlyDifferences || controls.showOnlyKeyCategories || controls.comparisonLens !== 'auto' ? (
+        <p className="compare-scout-note">
+          {controls.showOnlyDifferences ? 'Only clear edges shown.' : 'Full row set shown.'}{' '}
+          {controls.showOnlyKeyCategories ? 'Key categories only.' : ''}
+          {controls.comparisonLens === 'position' ? ' Normalized toward the exact-position lane.' : ''}
+          {controls.comparisonLens === 'role' ? ' Focused on role-relevant categories.' : ''}
         </p>
       ) : null}
 

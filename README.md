@@ -1,104 +1,86 @@
-# GoalLine
+GoalLine – Football Analytics Platform
 
-GoalLine is a football analytics web application for exploring and comparing players across different leagues.
+Този проект представлява уеб базирана система за анализ на футболни статистики.  
+Приложението позволява разглеждане на играчи, сравнение между тях и анализ на отбори чрез визуализирани статистики и допълнителни метрики.
 
-The platform allows users to search for players, view statistical profiles, and compare footballers using real match data.
+Системата е изградена така, че да работи изцяло чрез Docker, което означава, че не е необходимо да се инсталират допълнително Node.js или PostgreSQL.
 
----
+Какво е необходимо за стартиране
 
-## Technologies Used
+Преди да стартирате проекта, уверете се, че имате инсталирани:
 
-* React (Frontend)
-* Node.js / Express (Backend)
-* PostgreSQL (Database)
-* Docker (Containerization)
+- Docker Desktop
+- Visual Studio Code (препоръчително)
+- Интернет връзка
 
----
+Как да стартирате проекта
 
-## Project Structure
+1. Разархивирайте проекта (ако е .zip файл)
 
-```
-GoalLine
-│
-├ client/           # React frontend
-├ server/           # Backend API
-├ database/
-│   └ init.sql      # Database initialization file
-│
-├ docker-compose.yml
-├ README.md
-└ .gitignore
-```
+2. Отворете папката GoalLine във Visual Studio Code
 
----
+3. Стартирайте Docker Desktop
 
-## Running the Project
+4. Отворете терминала във VS Code  
+(горе в менюто: Terminal → New Terminal)
 
-### Requirements
+5. В терминала напишете следната команда:
 
-* Docker Desktop installed
-
-### Steps
-
-Clone the repository:
-
-```
-git clone https://github.com/YOUR_USERNAME/goaline.git
-cd goaline
-```
-
-Run the application with Docker:
-
-```
 docker compose up --build
-```
 
----
+6. Изчакайте Docker да изгради и стартира контейнерите  
+(това може да отнеме 1–3 минути при първо стартиране)
 
-## Access the Application
+Как да отворите приложението
 
-Frontend:
+След като всичко стартира успешно:
 
-```
+Frontend (основното приложение):  
 http://localhost:5173
-```
 
-Backend API:
+Backend (API):  
+http://localhost:5000
 
-```
-http://localhost:3001
-```
+Как да спрете проекта
 
-PostgreSQL Database:
+В терминала напишете:
 
-```
-Host: localhost  
-Port: 5432  
-Database: goaline  
-User: postgres  
-Password: postgres
-```
+docker compose down
 
----
+Това ще спре всички услуги, без да изтрие базата данни.
 
-## Features
+Как да стартирате отново проекта
 
-* Player search
-* Player comparison
-* League overview
-* Statistical profiles
-* Interactive web interface
+Ако проектът вече е бил стартиран:
 
----
+docker compose up
 
-## Purpose of the Project
+Ако възникне проблем
 
-GoalLine was created as a student project focused on football data analysis and visualization.
-The aim is to demonstrate how modern web technologies and databases can be used to analyze sports performance data.
+Ако приложението не работи правилно, направете пълен reset:
 
----
+1. В терминала напишете:
 
-## Author
+docker compose down -v
 
-GoalLine Project
-Football Analytics Platform
+2. След това:
+
+docker compose up --build
+
+Това ще изтрие старата база данни и ще създаде нова.
+
+Как работи проектът
+
+Проектът използва три основни компонента:
+
+- Database (PostgreSQL) – съхранява всички данни за играчите
+- Server (Node.js) – обработва заявките и логиката
+- Client (React) – визуализира информацията в браузъра
+
+Всички тези компоненти се стартират автоматично чрез Docker.
+
+Важно
+
+- Не затваряйте Docker Desktop докато проектът работи  
+- Ако портовете 5173 или 5000 не се отварят, рестартирайте Docker  
+- Проектът работи локално и не изисква интернет след първоначалното стартиране

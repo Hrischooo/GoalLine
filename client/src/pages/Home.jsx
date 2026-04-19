@@ -5,6 +5,7 @@ import OvrInlineValue from '../components/OvrInlineValue';
 import PlayerDiscoverySection from '../components/PlayerDiscoverySection';
 import PlayerHoverPreview from '../components/PlayerHoverPreview';
 import PlayerTextBlock from '../components/PlayerTextBlock';
+import ScoutSignalsSection from '../components/ScoutSignalsSection';
 import '../styles/home.css';
 import { buildPlayerKey, getLeagueName, getSeasonDatasetLabel } from '../utils/dataset';
 import { computeDisplayMetrics, formatStatValue, formatTextValue, toNumber } from '../utils/playerMetrics';
@@ -276,7 +277,6 @@ export default function Home({ header, leagues, status, players, ratingIndex, te
       })),
     [loadedPlayers, ratingIndex]
   );
-  const leaderCards = useMemo(() => LEADER_CARD_DEFINITIONS.map((definition) => buildLeaderCard(definition, scoutingRecords)).filter(Boolean), [scoutingRecords]);
   const spotlightPlayers = useMemo(() => {
     const midfielders = scoutingRecords
       .filter((record) => record.metrics.positionFamily === 'midfielder')
@@ -313,10 +313,9 @@ export default function Home({ header, leagues, status, players, ratingIndex, te
         <section className="home-hero">
           <div className="home-hero__copy">
             <p className="home-kicker">Full Database Scouting Workspace</p>
-            <h1>GoalLine turns raw football data into player decisions.</h1>
+            <h1>GoalLine helps turn football data into clearer player decisions.</h1>
             <p className="home-subtitle">
-              Browse the full player database, open detailed scouting screens with complete stat objects, and compare any two
-              players in the dataset.
+              Browse the full player database, open detailed scouting screens, and compare players without the page feeling overloaded.
             </p>
 
             <div className="hero-actions">
@@ -363,38 +362,7 @@ export default function Home({ header, leagues, status, players, ratingIndex, te
 
         <section className="home-dashboard">
           <div className="home-dashboard__main">
-            <section className="home-panel">
-              <div className="home-panel__header">
-                <div>
-                  <p className="home-kicker">Scout Signals</p>
-                  <h2>Stat Leaders</h2>
-                </div>
-              </div>
-
-              <div className="home-leader-grid">
-                {leaderCards.map((card) => (
-                  <article className={`home-leader-card home-leader-card--${card.tone}`} key={card.id}>
-                    <div className="home-leader-card__header">
-                      <div className="home-leader-card__icon" aria-hidden="true">
-                        {card.symbol}
-                      </div>
-                      <div className="home-leader-card__value">
-                        <span>{card.title}</span>
-                        <div>
-                          <strong>{card.value}</strong>
-                          <small>{card.metricLabel}</small>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="home-leader-card__footer">
-                      <strong>{card.player}</strong>
-                      <span>{card.club}</span>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </section>
+            <ScoutSignalsSection scoutingRecords={scoutingRecords} />
 
             <section className="home-panel home-spotlight">
               <div className="home-panel__header home-panel__header--spread">

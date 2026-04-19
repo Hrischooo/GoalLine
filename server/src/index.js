@@ -8,12 +8,16 @@ const { databaseConfig, pool, query } = require('./db');
 const { TEAM_PROFILE_OVERRIDES } = require('./teamSeed');
 
 const app = express();
-const port = Number(process.env.PORT) || 5000;
+const DEFAULT_PORT = 5000;
+const parsedPort = Number.parseInt(process.env.PORT ?? '', 10);
+const hasExplicitPort = Number.isInteger(parsedPort) && parsedPort > 0;
+const requestedPort = hasExplicitPort ? parsedPort : DEFAULT_PORT;
 const PLAYER_TABLE = 'all_players';
 const TEAM_TABLE = 'teams';
 let cachedPlayerColumns = null;
 let teamDatasetPromise = null;
 let analyticsReadyPromise = null;
+let server = null;
 
 app.use(cors());
 app.use(express.json());
@@ -575,8 +579,8 @@ app.use((error, req, res, next) => {
   });
 });
 
-const server = app.listen(port, async () => {
-  console.log(`[api] Server listening on http://localhost:${port}`);
+async function runStartupChecks(activePort) {
+  console.log(`[api] Server listening on http://localhost:${activePort}`);
   console.log('[api] Loaded database config', {
     source: databaseConfig.source,
     host: databaseConfig.host,
@@ -608,10 +612,44 @@ const server = app.listen(port, async () => {
   } catch (error) {
     console.error('[api] Startup database check failed:', error.message);
   }
-});
+}
+
+function startServer(portToUse) {
+  const nextServer = app.listen(portToUse, async () => {
+    server = nextServer;
+    await runStartupChecks(portToUse);
+  });
+
+  nextServer.once('error', (error) => {
+    if (error.code === 'EADDRINUSE' && !hasExplicitPort) {
+      const fallbackPort = portToUse + 1;
+      console.warn(
+        `[api] Port ${portToUse} is already in use. Retrying on http://localhost:${fallbackPort}`
+      );
+      startServer(fallbackPort);
+      return;
+    }
+
+    console.error(`[api] Failed to start server on port ${portToUse}:`, error.message);
+    process.exit(1);
+  });
+}
+
+startServer(requestedPort);
 
 async function shutdown(signal) {
   console.log(`[api] Received ${signal}. Shutting down...`);
+
+  if (!server || !server.listening) {
+    try {
+      await pool.end();
+      console.log('[db] PostgreSQL pool closed');
+    } catch (error) {
+      console.error('[db] Error while closing pool:', error);
+    } finally {
+      process.exit(0);
+    }
+  }
 
   server.close(async () => {
     try {
