@@ -1055,7 +1055,16 @@
 }
 
 .section-heading--discovery {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: flex-start;
+  gap: 18px 24px;
+  margin-bottom: 20px;
+}
+
+.home-discovery-section__actions {
+  justify-content: flex-end;
+  align-self: end;
 }
 
 .discovery-filters-toggle {
@@ -1078,7 +1087,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
+  gap: 14px 18px;
   padding: 16px 18px;
   border-radius: 20px;
   background:
@@ -1289,7 +1298,7 @@
   display: flex;
   align-items: start;
   justify-content: space-between;
-  gap: 16px;
+  gap: 18px;
   padding: 14px 16px;
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.03);
@@ -1759,8 +1768,11 @@
     max-width: none;
   }
 
+  .section-heading--discovery {
+    grid-template-columns: 1fr;
+  }
+
   .discovery-sidebar__summary {
-    flex-direction: column;
-    align-items: flex-start;
+    grid-template-columns: 1fr;
   }
 }

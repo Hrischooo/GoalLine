@@ -102,15 +102,13 @@ function MiniPlayerList({ label, players = [], onNavigate }) {
       <div className="team-mini-list__header">
         <span>{label}</span>
       </div>
-      <div className="team-mini-list__items">
+              <div className="team-mini-list__items">
         {players.map((player) => (
           <button className="team-mini-list__item" key={player.player} onClick={() => onNavigate(`/player/${encodeURIComponent(buildPlayerKey(player))}`)} type="button">
             <PlayerAvatar name={player.player} size="small" />
             <div>
               <strong>{formatTextValue(player.player)}</strong>
-              <span>
-                {player.metrics?.finalOVR} OVR / {formatTextValue(player.metrics?.primaryTacticalRoleLabel)}
-              </span>
+              <span>{player.metrics?.finalOVR} OVR • {formatTextValue(player.metrics?.primaryTacticalRoleLabel)}</span>
             </div>
           </button>
         ))}

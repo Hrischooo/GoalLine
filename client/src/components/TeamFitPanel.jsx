@@ -150,15 +150,15 @@ export default function TeamFitPanel({ metrics, onOpenPlayer, player, playerIden
               </div>
 
               <div className="team-fit-panel__summary">
-                <div className="overview-card">
+                <div className="overview-card overview-card--fit-role">
                   <span>Best Role</span>
                   <strong>{fitProfile.bestTargetRole}</strong>
                 </div>
-                <div className="overview-card">
+                <div className="overview-card overview-card--fit-slot">
                   <span>Target Slot</span>
                   <strong>{fitProfile.bestTargetSlot}</strong>
                 </div>
-                <div className="overview-card">
+                <div className="overview-card overview-card--fit-impact">
                   <span>Squad Impact</span>
                   <strong>{fitProfile.upgradeLevel === 'depth-only' ? 'Depth option' : `${fitProfile.upgradeLevel} XI upgrade`}</strong>
                 </div>

@@ -1,5 +1,6 @@
 import { buildPlayerKey, getLeagueFilterValue, getLeagueName } from './dataset';
-import { computeDisplayMetrics, formatStatValue, toNumber } from './playerMetrics';
+import { computeDisplayMetrics, formatStatValue, getEstimatedMinutes, toNumber } from './playerMetrics';
+import { getPlayerRadarProfile } from './playerRadar';
 
 const MINIMUM_LEAGUE_PEERS = 8;
 
@@ -394,6 +395,87 @@ function buildAnalyticsCards(metrics, peerContext) {
   return fallbackCard ? [fallbackCard] : [];
 }
 
+function averageValues(values = [], fallback = 0) {
+  return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : fallback;
+}
+
+function getToneFromPercentile(percentile) {
+  if (percentile >= 72) {
+    return 'positive';
+  }
+
+  if (percentile <= 34) {
+    return 'negative';
+  }
+
+  return 'neutral';
+}
+
+function buildAnalyticsOverview(metrics, peerContext, analyticsCards = []) {
+  const playerRadarProfile = getPlayerRadarProfile(metrics);
+  const peerRadarProfiles = peerContext.peerSnapshots
+    .map((entry) => getPlayerRadarProfile(entry.metrics))
+    .filter((profile) => profile?.radarAxes?.length === playerRadarProfile.radarAxes.length);
+  const categoryDefinitions = [
+    { key: 'attack', label: 'Attack', metricKey: 'attackScore' },
+    { key: 'creativity', label: 'Creativity', metricKey: 'creativityScore' },
+    { key: 'possession', label: 'Possession', metricKey: 'possessionScore' },
+    { key: 'defending', label: 'Defending', metricKey: 'defendingScore' }
+  ];
+  const percentileBars = categoryDefinitions.map((definition) => {
+    const playerValue = toNumber(metrics?.[definition.metricKey]);
+    const peerValues = peerContext.peerSnapshots.map((entry) => toNumber(entry.metrics?.[definition.metricKey])).filter((value) => Number.isFinite(value));
+    const averageValue = averageValues(peerValues, playerValue);
+    const rangeValues = [...peerValues, playerValue, averageValue];
+    const percentile = calculatePercentile([...peerValues, playerValue], playerValue);
+
+    return {
+      key: definition.key,
+      label: definition.label,
+      percentile,
+      tone: getToneFromPercentile(percentile),
+      playerDisplay: formatDisplayValue(playerValue),
+      averageDisplay: formatDisplayValue(averageValue),
+      playerRadarValue: scaleRadarValue(playerValue, Math.min(...rangeValues), Math.max(...rangeValues)),
+      averageRadarValue: scaleRadarValue(averageValue, Math.min(...rangeValues), Math.max(...rangeValues))
+    };
+  });
+  const strengths = [...percentileBars]
+    .sort((left, right) => right.percentile - left.percentile)
+    .slice(0, 2)
+    .map((entry) => `${entry.label} (${entry.percentile}th percentile)`);
+  const weaknesses = [...percentileBars]
+    .sort((left, right) => left.percentile - right.percentile)
+    .slice(0, 2)
+    .map((entry) => `${entry.label} (${entry.percentile}th percentile)`);
+  const standout = strengths[0] || 'Balanced category mix';
+  const watchArea = weaknesses[0] || 'No major weak area returned';
+
+  return {
+    percentileBars,
+    strengths,
+    weaknesses,
+    radarTitle: playerRadarProfile.title,
+    radarSubtitle: playerRadarProfile.radarProfileName,
+    radarAxes: playerRadarProfile.radarAxes,
+    averageAxes: playerRadarProfile.radarAxes.map((axis, index) => ({
+      key: `${axis.key}-avg`,
+      label: axis.label,
+      value: Math.round(
+        averageValues(
+          peerRadarProfiles
+            .map((profile) => toNumber(profile.radarAxes[index]?.value))
+            .filter((value) => Number.isFinite(value)),
+          axis.value
+        )
+      )
+    })),
+    peerSnippet:
+      analyticsCards[0]?.insight ||
+      `${standout} stands out most against ${peerContext.comparisonLabel}, while ${watchArea.toLowerCase()} remains the softer part of the profile.`
+  };
+}
+
 function findCompetitionRows(players = [], player, ratingIndex = {}) {
   const targetName = normalizeText(player.player);
   const targetSeason = String(player.season || '');
@@ -405,7 +487,7 @@ function findCompetitionRows(players = [], player, ratingIndex = {}) {
     competition: record.comp || getLeagueName(record),
     season: record.season || 'N/A',
     apps: toNumber(record.matches_played),
-    minutes: Math.round(toNumber(record.matches_played) * toNumber(record.avg_mins_per_match)),
+    minutes: Math.round(getEstimatedMinutes(record)),
     goals: toNumber(record.goals),
     assists: toNumber(record.assists),
     expected_goals: toNumber(record.expected_goals),
@@ -503,6 +585,70 @@ function buildStatBlocks(metrics, peerContext, rows) {
     .slice(0, 4);
 }
 
+function buildStatsHighlights(metrics, peerContext, rows) {
+  const metricMap = buildMetricMap(metrics);
+  const rowTotals = Object.keys(rows[0] || {}).reduce((accumulator, key) => {
+    accumulator[key] = typeof rows[0]?.[key] === 'number' ? sumRows(rows, key) : rows[0]?.[key];
+    return accumulator;
+  }, {});
+
+  return getStatBlockConfigs(metrics.positionModel)
+    .map((config) => {
+      const compareMetric = metricMap[config.compareKey];
+
+      if (!compareMetric || compareMetric.missing) {
+        return null;
+      }
+
+      const peerValues = peerContext.peerSnapshots
+        .map((entry) => buildMetricMap(entry.metrics)[config.compareKey])
+        .filter(Boolean)
+        .map((metric) => toNumber(metric.comparableValue))
+        .filter((value) => Number.isFinite(value));
+      const compareValue = toNumber(compareMetric.comparableValue);
+      const percentile = calculatePercentile([...peerValues, compareValue], compareValue);
+
+      return {
+        key: config.key,
+        label: config.label,
+        tone: config.tone,
+        percentile,
+        value: formatTableValue(config.sourceKey in rowTotals ? rowTotals[config.sourceKey] : toNumber(metricMap[config.sourceKey]?.comparableValue), config.kind),
+        context: buildSupportLabel(config.support[0], metricMap, rowTotals)
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 4);
+}
+
+function buildMetricGroups(metrics, peerContext) {
+  const playerMetricMap = buildMetricMap(metrics);
+
+  return getAnalyticsCardConfigs(metrics.positionModel)
+    .map((card) => {
+      const metricRows = card.metrics.map((metric) => buildMetricComparison(metric, playerMetricMap, peerContext.peerSnapshots)).filter(Boolean);
+
+      if (metricRows.length < 3) {
+        return null;
+      }
+
+      return {
+        key: card.key,
+        title: card.title,
+        description: buildCardInsight(metricRows),
+        items: metricRows.slice(0, 4).map((metric) => ({
+          key: metric.key,
+          label: metric.label,
+          percentile: metric.percentile,
+          status: metric.status,
+          value: metric.playerDisplay
+        }))
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 3);
+}
+
 export function buildPlayerReportsData({ player, metrics, players = [], ratingIndex = {} }) {
   if (!player || !metrics) {
     return { analyticsReport: null, statsReport: null };
@@ -510,6 +656,7 @@ export function buildPlayerReportsData({ player, metrics, players = [], ratingIn
 
   const peerContext = collectPeerContext(player, metrics, players, ratingIndex);
   const competitionRows = findCompetitionRows(players, player, ratingIndex);
+  const analyticsCards = buildAnalyticsCards(metrics, peerContext);
 
   return {
     analyticsReport: {
@@ -517,12 +664,15 @@ export function buildPlayerReportsData({ player, metrics, players = [], ratingIn
       description: 'Position-specific radar cards benchmarked against the most relevant peer cohort.',
       meta: [{ label: 'Role', value: metrics.primaryTacticalRoleLabel || metrics.playerArchetype || POSITION_BUCKETS[metrics.positionModel] || metrics.exactPosition }, { label: 'Comparison set', value: peerContext.comparisonLabel }, { label: 'Minutes', value: formatStatValue(metrics.minutesPlayed, '0') }],
       averageLabel: peerContext.averageLabel,
-      cards: buildAnalyticsCards(metrics, peerContext)
+      overview: buildAnalyticsOverview(metrics, peerContext, analyticsCards),
+      cards: analyticsCards
     },
     statsReport: {
       title: 'Player Stats Report',
       description: 'Competition output, a quick summary layer, and position-aware stat blocks in one clean view.',
       meta: [{ label: 'Competition set', value: competitionRows.length > 1 ? `${competitionRows.length} competitions` : competitionRows[0]?.competition || getLeagueName(player) }, { label: 'Apps', value: formatStatValue(sumRows(competitionRows, 'apps'), '0') }, { label: 'GoalLine rating', value: formatStatValue(metrics.summaryScore, '0') }],
+      highlights: buildStatsHighlights(metrics, peerContext, competitionRows),
+      metricGroups: buildMetricGroups(metrics, peerContext),
       table: { columns: getTableColumns(metrics.positionModel), rows: competitionRows },
       summaryItems: buildSummaryItems(metrics, competitionRows),
       statBlocks: buildStatBlocks(metrics, peerContext, competitionRows)

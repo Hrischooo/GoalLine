@@ -22,9 +22,7 @@ function TeamResult({ active, onHover, onSelect, option, query }) {
       <ClubBadge name={option.name} size="small" />
       <div>
         <strong>{label}</strong>
-        <span>
-          {option.league} / {option.formation} / {option.rating} OVR
-        </span>
+        <span>{option.league} • {option.formation} • {option.rating} OVR</span>
       </div>
     </button>
   );
@@ -146,9 +144,7 @@ export default function CompareTeamSelector({ label, onSelect, options, selected
           <div className="compare-selector__selected-copy">
             <div>
               <strong>{selectedTeam.displayName || selectedTeam.name}</strong>
-              <span>
-                {selectedTeam.league} / {selectedTeam.preferred_formation || 'N/A'} / {Math.round(selectedTeam.teamRating || selectedTeam.avgRating || 0)} OVR
-              </span>
+              <span>{selectedTeam.league} • {selectedTeam.preferred_formation || 'N/A'} • {Math.round(selectedTeam.teamRating || selectedTeam.avgRating || 0)} OVR</span>
             </div>
           </div>
         </div>

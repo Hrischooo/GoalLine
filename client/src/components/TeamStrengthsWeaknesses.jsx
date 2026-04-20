@@ -49,9 +49,7 @@ export default function TeamStrengthsWeaknesses({ team }) {
           {(team?.youngTalents || []).map((player) => (
             <div className="team-young-talents__player" key={player.player}>
               <strong>{formatTextValue(player.player)}</strong>
-              <span>
-                Age {formatTextValue(player.age)} / {player.metrics?.finalOVR} OVR
-              </span>
+              <span>Age {formatTextValue(player.age)} • {player.metrics?.finalOVR} OVR</span>
             </div>
           ))}
         </div>

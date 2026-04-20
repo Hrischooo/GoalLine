@@ -13,6 +13,49 @@ export default function PlayerStatsReport({ report }) {
 
   return (
     <PlayerReportsLayout description={report.description} meta={report.meta} title={report.title}>
+      {report.highlights?.length ? (
+        <section className="stats-highlight-grid">
+          {report.highlights.map((item) => (
+            <article className={`stats-highlight-card stats-highlight-card--${item.tone}`} key={item.key}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.percentile}th percentile vs peers</small>
+              {item.context ? <p>{item.context}</p> : null}
+            </article>
+          ))}
+        </section>
+      ) : null}
+
+      {report.metricGroups?.length ? (
+        <section className="stats-metric-groups">
+          {report.metricGroups.map((group) => (
+            <article className="stats-metric-group" key={group.key}>
+              <header className="stats-metric-group__header">
+                <div>
+                  <h3>{group.title}</h3>
+                  <p>{group.description}</p>
+                </div>
+              </header>
+
+              <div className="stats-metric-group__rows">
+                {group.items.map((item) => (
+                  <div className="stats-metric-row" key={item.key}>
+                    <div className="stats-metric-row__top">
+                      <strong>{item.label}</strong>
+                      <span>{item.value}</span>
+                    </div>
+                    <div className="stats-metric-row__track">
+                      <div className={`stats-metric-row__fill stats-metric-row__fill--${item.status}`} style={{ width: `${item.percentile}%` }} />
+                    </div>
+                    <small>{item.percentile}th percentile vs peers</small>
+                  </div>
+                ))}
+              </div>
+            </article>
+          ))}
+        </section>
+      ) : null}
+
       <section className="stats-report-section">
         <div className="stats-report-section__header">
           <h3>Competition Table</h3>

@@ -378,6 +378,14 @@
   font-size: 0.78rem;
 }
 
+.compare-selector__selected span,
+.compare-selector__result span {
+  display: block;
+  margin-top: 6px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 .compare-selector__field {
   display: grid;
   gap: 10px;

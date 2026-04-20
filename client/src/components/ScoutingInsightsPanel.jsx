@@ -8,15 +8,33 @@ const INSIGHT_TABS = [
 ];
 
 function StrengthsColumn({ items = [], title, tone }) {
+  const visibleItems = items.slice(0, 3);
+  const fallback =
+    tone === 'negative'
+      ? {
+          key: `${tone}-fallback`,
+          title: 'No clear weakness surfaced',
+          explanation: 'The current sample did not flag a major weak area, so this section stays compact rather than forcing a negative takeaway.'
+        }
+      : {
+          key: `${tone}-fallback`,
+          title: 'No standout strength surfaced',
+          explanation: 'The current sample stayed close to baseline across the main categories.'
+        };
+
   return (
-    <div className="scouting-insights__column">
+    <div className={`scouting-insights__column scouting-insights__column--${tone}`}>
       <div className="scouting-insights__column-header">
         <span>{title}</span>
       </div>
-      <div className="insight-mini-list">
-        {items.map((item) => (
+
+      <div className={`insight-mini-list${visibleItems.length <= 1 ? ' insight-mini-list--single' : ''}`}>
+        {(visibleItems.length ? visibleItems : [fallback]).map((item) => (
           <article className={`insight-mini-row insight-mini-row--${tone}`} key={item.key}>
-            <strong>{item.title}</strong>
+            <div className="insight-mini-row__header">
+              <strong>{item.title}</strong>
+              {item.severity ? <span className={`insight-mini-row__badge insight-mini-row__badge--${tone}`}>{String(item.severity).replace(/_/g, ' ')}</span> : null}
+            </div>
             <p>{item.explanation}</p>
           </article>
         ))}
@@ -46,7 +64,9 @@ function StrengthsWeaknessesView({ profile }) {
 
       {(profile?.developmentAreas || []).length ? (
         <div className="insight-mini-row insight-mini-row--neutral">
-          <strong>{profile.developmentAreas[0].title}</strong>
+          <div className="insight-mini-row__header">
+            <strong>{profile.developmentAreas[0].title}</strong>
+          </div>
           <p>{profile.developmentAreas[0].explanation}</p>
         </div>
       ) : null}

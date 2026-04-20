@@ -53,7 +53,7 @@ docker compose down
 
 Ако проектът вече е бил стартиран:
 
-docker compose up
+docker compose up -d
 
 Ако възникне проблем
 

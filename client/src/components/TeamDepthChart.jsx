@@ -18,9 +18,7 @@ export default function TeamDepthChart({ depthChart = [] }) {
               {row.players.map((entry) => (
                 <div className="team-depth-chart__player" key={`${row.position}-${entry.player.player}`}>
                   <strong>{formatTextValue(entry.player.player)}</strong>
-                  <span>
-                    {entry.rating} OVR / {formatTextValue(entry.role)}
-                  </span>
+                  <span>{entry.rating} OVR • {formatTextValue(entry.role)}</span>
                 </div>
               ))}
             </div>

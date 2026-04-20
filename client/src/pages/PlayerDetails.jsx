@@ -250,6 +250,23 @@ export default function PlayerDetails({
 
         {isReportView ? (
           <section className="reports-view">
+            <div className="report-view-switch">
+              <button
+                className={`report-view-switch__button${playerReport === 'analytics' ? ' report-view-switch__button--active' : ''}`}
+                onClick={() => handleReportChange('analytics')}
+                type="button"
+              >
+                Player Analytics
+              </button>
+              <button
+                className={`report-view-switch__button${playerReport === 'stats' ? ' report-view-switch__button--active' : ''}`}
+                onClick={() => handleReportChange('stats')}
+                type="button"
+              >
+                Stats
+              </button>
+            </div>
+
             {playerReport === 'stats' ? (
               <PlayerStatsReport report={reportsData.statsReport} />
             ) : (
